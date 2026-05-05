@@ -13,7 +13,7 @@ export const Route = createFileRoute("/about")({
       <section className="container mx-auto max-w-3xl px-4 py-20">
         <h1 className="text-4xl font-bold">About ODDSPrime</h1>
         <p className="mt-6 text-muted-foreground">
-          ODDSPrime is German's premium football prediction platform. We combine deep statistical models, expert analysis and live data to deliver tips that actually win.
+          ODDSPrime is German's premium football prediction platform. We combine deep statistical models, expert Fixed and live data to deliver tips that actually win.
         </p>
         <p className="mt-4 text-muted-foreground">
           Our slogan — <strong>Prime Odds, Smart Wins</strong> — defines our promise: high-quality picks, transparent pricing, and a community of smart bettors.

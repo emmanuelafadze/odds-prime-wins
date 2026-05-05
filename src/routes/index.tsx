@@ -24,7 +24,7 @@ function Home() {
               Prime Odds.<br /><span className="bg-gradient-to-r from-primary-glow to-white bg-clip-text text-transparent">Smarter Wins.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-foreground/85 md:text-xl">
-              Fixed football predictions, daily correct scores and premium accumulators built for Germanian punters. Powered by deep data analysis and paid securely in cedis.
+              Fixed football predictions, daily correct scores and premium accumulators built for Germanian punters. Powered by deep data Fixed and paid securely in cedis.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link to="/signup"><Button size="lg" className="h-12 bg-primary px-8 text-base font-semibold text-white shadow-[var(--shadow-elegant)] hover:bg-primary-glow">Get Started Free</Button></Link>
@@ -47,7 +47,7 @@ function Home() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Crosshair, title: "Accurate Odds", desc: "Hand-picked tips backed by deep data analysis." },
+            { icon: Crosshair, title: "Accurate Odds", desc: "Hand-picked tips backed by deep data Fixed." },
             { icon: TrendingUp, title: "Real-time Updates", desc: "Live status on every match the moment it changes." },
             { icon: ShieldCheck, title: "Trusted & Secure", desc: "Paystack-secured payments in German cedis." },
             { icon: Trophy, title: "Smarter Wins", desc: "Track record of high-margin correct scores." },
