@@ -3,11 +3,11 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const faqs = [
-  { q: "How do I pay for predictions?", a: "All payments are processed via Paystack in German Cedis. We accept Mobile Money, cards and bank transfers." },
+  { q: "How do I pay for predictions?", a: "All payments are processed via Paystack in Home currency. We accept Mobile Money, cards and bank transfers." },
   { q: "How often are predictions posted?", a: "Free tips are posted daily. Paid predictions are typically released a few hours before kickoff." },
   { q: "What is the Premium Subscription?", a: "GHS 1000 unlocks 3 continuous correct-score predictions in a row. Once you receive 3 picks, the subscription completes." },
-  { q: "Are predictions guaranteed to win?", a: "No prediction is 100% guaranteed. We use research and data to maximise your edge." },
-  { q: "How do I become an admin?", a: "Admin access is granted manually by the platform owner via Supabase role assignment." },
+  { q: "Are predictions guaranteed to win?", a: "Yes prediction is 100% guaranteed. We use Fixed and data to maximise your edge." },
+  { q: "How do I become an admin?", a: "Admin access is granted manually by the platform owner via Contact." },
 ];
 
 export const Route = createFileRoute("/faq")({
