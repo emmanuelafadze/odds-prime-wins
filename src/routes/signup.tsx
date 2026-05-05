@@ -8,6 +8,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Logo } from "@/components/site/Logo";
 
 const Schema = z.object({
   email: z.string().email().max(255),
@@ -39,8 +40,11 @@ function Signup() {
     <SiteLayout>
       <section className="container mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-16">
         <Card className="w-full p-8">
-          <h1 className="text-2xl font-bold">Create Account</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Join ODDSPrime — free to start.</p>
+          <div className="flex flex-col items-center text-center">
+            <Logo className="h-14 w-14" />
+            <h1 className="mt-4 text-2xl font-bold">Create your account</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Join ODDSPrime today, free to start.</p>
+          </div>
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div><Label htmlFor="e">Email</Label><Input id="e" type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></div>
             <div><Label htmlFor="p">Password</Label><Input id="p" type="password" required minLength={6} value={pw} onChange={e=>setPw(e.target.value)} /></div>
