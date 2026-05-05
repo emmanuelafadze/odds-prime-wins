@@ -27,18 +27,17 @@ export async function getGhsAmount(usd: number): Promise<number> {
 }
 
 export async function payWithPaystack(opts: {
-  email: string; amountUsd: number; metadata?: Record<string, any>;
-  onSuccess: (ref: string, ghsAmount: number) => void; onClose?: () => void;
+  email: string; amountGhs: number; metadata?: Record<string, any>;
+  onSuccess: (ref: string) => void; onClose?: () => void;
 }) {
-  const amountGhs = await getGhsAmount(opts.amountUsd);
   await loadScript();
   const handler = (window as any).PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email: opts.email,
-    amount: Math.round(amountGhs * 100),
+    amount: Math.round(opts.amountGhs * 100),
     currency: "GHS",
-    metadata: { ...opts.metadata, usd_price: opts.amountUsd, amount_ghs: amountGhs },
-    callback: (resp: any) => opts.onSuccess(resp.reference, amountGhs),
+    metadata: { ...opts.metadata },
+    callback: (resp: any) => opts.onSuccess(resp.reference),
     onClose: () => opts.onClose?.(),
   });
   handler.openIframe();

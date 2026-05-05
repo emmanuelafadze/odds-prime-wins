@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { PRICING } from "@/lib/pricing";
 import { useAuth } from "@/lib/auth";
-import { payWithPaystack, getGhsAmount } from "@/lib/paystack";
+import { payWithPaystack } from "@/lib/paystack";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -26,19 +26,19 @@ function Pricing() {
     setLoadingKeys((prev) => new Set([...prev, key]));
     const p = PRICING[key];
     try {
-      const ghsAmount = await getGhsAmount(p.price);
-      toast.message(`Opening Paystack checkout for GHS ${ghsAmount.toFixed(2)} (~$${p.price})`);
+      const ghsAmount = p.price;
+      toast.message(`Opening Paystack checkout for GHS ${ghsAmount.toFixed(2)}`);
       await payWithPaystack({
         email: user.email!,
-        amountUsd: p.price,
-        metadata: { tier: p.tier, name: p.name, ghs_amount: ghsAmount },
+        amountGhs: ghsAmount,
+        metadata: { tier: p.tier, name: p.name },
         onSuccess: async (ref) => {
           const today = new Date().toISOString().slice(0, 10);
           const expiresAt = "premium" === key
             ? new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
             : new Date(Date.now() + 24 * 3600 * 1000).toISOString();
           const { error } = await supabase.from("purchases").insert({
-            user_id: user.id, tier: p.tier, usd_price: p.price, amount_ghs: ghsAmount,
+            user_id: user.id, tier: p.tier, price: ghsAmount, amount_ghs: ghsAmount,
             reference: ref, match_date: today, expires_at: expiresAt,
           });
           if (error) toast.error(`Purchase failed: ${error.message}`);
