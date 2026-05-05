@@ -15,7 +15,7 @@ function loadScript(): Promise<void> {
   return loading;
 }
 
-async function getGhsAmount(usd: number): Promise<number> {
+export async function getGhsAmount(usd: number): Promise<number> {
   try {
     const res = await fetch('https://api.exchangerate.host/convert?from=USD&to=GHS&amount=' + usd);
     const data = await res.json();
