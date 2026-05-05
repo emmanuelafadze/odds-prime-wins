@@ -1,7 +1,8 @@
-# Task Progress: Update Daily 10 Odds Price to 150 Cedis
+# Task Progress: Predictions Visibility for Normal Users
 
-## Pending Steps
-- [x] Step 1: Create TODO.md with plan steps
-- [x] Step 2: Edit src/lib/pricing.ts to change price from 1000 to 150 for 'ten' tier\n- [x] Step 3: Verify change in /pricing page\n- [x] Step 4: Complete task
+## Plan Steps
+- [x] Previous price update complete
+- [ ] Step 1: Create TODO.md
+- [x] Step 2: Edit PredictionCard.tsx to hide odds when locked\n- [x] Step 3: Verify /predictions shows locked matches without total odds\n- [x] Step 4: Complete task
 
-**Next action:** Edit pricing.ts
+**Next:** Edit component

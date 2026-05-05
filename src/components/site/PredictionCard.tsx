@@ -31,7 +31,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
           <div className="mt-1 text-base font-bold text-primary">{p.prediction}</div>
         )}
       </div>
-      {p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
+{!locked && p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
     </Card>
   );
 }
