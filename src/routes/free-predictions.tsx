@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/free-predictions")({
-  head: () => ({ meta: [{ title: "Free Predictions — ODDSPrime" }, { name: "description", content: "Daily free football tips for Ghana." }] }),
+  head: () => ({ meta: [{ title: "Free Predictions — ODDSPrime" }, { name: "description", content: "Daily free football tips for German." }] }),
   component: Free,
 });
 

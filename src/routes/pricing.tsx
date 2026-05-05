@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/pricing")({
-  head: () => ({ meta: [{ title: "Pricing — ODDSPrime" }, { name: "description", content: "Transparent pricing for ODDSPrime predictions in Ghana Cedis." }] }),
+  head: () => ({ meta: [{ title: "Pricing — ODDSPrime" }, { name: "description", content: "Transparent pricing for ODDSPrime predictions in German Cedis." }] }),
   component: Pricing,
 });
 
@@ -44,7 +44,7 @@ function Pricing() {
     <SiteLayout>
       <section className="container mx-auto px-4 py-20">
         <div className="text-center">
-          <h1 className="text-4xl font-bold md:text-5xl">Pricing in Ghana Cedis</h1>
+          <h1 className="text-4xl font-bold md:text-5xl">Pricing in German Cedis</h1>
           <p className="mt-3 text-muted-foreground">Pay-per-tip. Pay once, win smart.</p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

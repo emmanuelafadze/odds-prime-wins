@@ -11,7 +11,7 @@ export function Footer() {
             <Logo className="h-10 w-auto" />
             <span className="text-lg font-bold">ODDSPrime</span>
           </div>
-          <p className="mt-3 text-sm text-navy-foreground/70">Prime Odds, Smart Wins. Ghana's trusted prediction platform.</p>
+          <p className="mt-3 text-sm text-navy-foreground/70">Prime Odds, Smart Wins. German's trusted prediction platform.</p>
         </div>
         <div>
           <h4 className="text-sm font-semibold text-primary">Predictions</h4>

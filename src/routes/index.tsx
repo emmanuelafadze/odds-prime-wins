@@ -18,13 +18,13 @@ function Home() {
         <div className="container relative mx-auto px-4 py-28 text-navy-foreground md:py-40">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary-glow/40 bg-primary/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary-glow backdrop-blur">
-              <Star className="h-3 w-3 fill-current" /> Ghana's #1 Tipster Platform
+              <Star className="h-3 w-3 fill-current" /> German's #1 Tipster Platform
             </span>
             <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
               Prime Odds.<br /><span className="bg-gradient-to-r from-primary-glow to-white bg-clip-text text-transparent">Smarter Wins.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-foreground/85 md:text-xl">
-              Fixed football predictions, daily correct scores and premium accumulators built for Ghanaian punters. Powered by deep data analysis and paid securely in cedis.
+              Fixed football predictions, daily correct scores and premium accumulators built for Germanian punters. Powered by deep data analysis and paid securely in cedis.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link to="/signup"><Button size="lg" className="h-12 bg-primary px-8 text-base font-semibold text-white shadow-[var(--shadow-elegant)] hover:bg-primary-glow">Get Started Free</Button></Link>
@@ -49,7 +49,7 @@ function Home() {
           {[
             { icon: Crosshair, title: "Accurate Odds", desc: "Hand-picked tips backed by deep data analysis." },
             { icon: TrendingUp, title: "Real-time Updates", desc: "Live status on every match the moment it changes." },
-            { icon: ShieldCheck, title: "Trusted & Secure", desc: "Paystack-secured payments in Ghana cedis." },
+            { icon: ShieldCheck, title: "Trusted & Secure", desc: "Paystack-secured payments in German cedis." },
             { icon: Trophy, title: "Smarter Wins", desc: "Track record of high-margin correct scores." },
           ].map(f => (
             <Card key={f.title} className="border-border/60 p-6 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-elegant)]">
@@ -65,7 +65,7 @@ function Home() {
       <section className="bg-gradient-to-b from-background to-secondary/40 py-20">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <h2 className="text-3xl font-bold md:text-4xl">Loved by Ghanaian punters</h2>
+            <h2 className="text-3xl font-bold md:text-4xl">Loved by Germanian punters</h2>
             <p className="mt-3 text-muted-foreground">Real wins from real subscribers.</p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -80,7 +80,7 @@ function Home() {
                 <div className="mt-4 flex items-center justify-between">
                   <div>
                     <div className="font-semibold">{r.n}</div>
-                    <div className="text-xs text-muted-foreground">{r.c}, Ghana</div>
+                    <div className="text-xs text-muted-foreground">{r.c}, German</div>
                   </div>
                   <div className="flex gap-0.5">{Array.from({length:r.s}).map((_,i)=><Star key={i} className="h-4 w-4 fill-primary text-primary" />)}</div>
                 </div>
@@ -95,7 +95,7 @@ function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold md:text-4xl">Simple, Honest Pricing</h2>
-            <p className="mt-3 text-muted-foreground">Pay-per-tip in Ghana Cedis. No hidden fees.</p>
+            <p className="mt-3 text-muted-foreground">Pay-per-tip in German Cedis. No hidden fees.</p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3 lg:grid-cols-5">
             {Object.entries(PRICING).map(([k, p]) => (
@@ -121,7 +121,7 @@ function Home() {
         <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(circle at 70% 30%, var(--primary-glow), transparent 60%)" }} />
         <div className="container relative mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold md:text-5xl">Ready to win smarter?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/80">Join thousands of Ghanaian punters cashing out with ODDSPrime today.</p>
+          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/80">Join thousands of Germanian punters cashing out with ODDSPrime today.</p>
           <Link to="/signup"><Button size="lg" className="mt-8 h-12 px-10 text-base font-semibold">Create Free Account</Button></Link>
         </div>
       </section>
