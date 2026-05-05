@@ -24,7 +24,7 @@ function Home() {
               Prime Odds.<br /><span className="bg-gradient-to-r from-primary-glow to-white bg-clip-text text-transparent">Smarter Wins.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-foreground/85 md:text-xl">
-              Fixed football predictions, daily correct scores and premium accumulators built for Germanian punters. Powered by deep data Fixed and paid securely in cedis.
+              Fixed football predictions, daily correct scores and premium accumulators built for German punters. Powered by deep data Fixed and paid securely in cedis.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link to="/signup"><Button size="lg" className="h-12 bg-primary px-8 text-base font-semibold text-white shadow-[var(--shadow-elegant)] hover:bg-primary-glow">Get Started Free</Button></Link>
@@ -65,7 +65,7 @@ function Home() {
       <section className="bg-gradient-to-b from-background to-secondary/40 py-20">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <h2 className="text-3xl font-bold md:text-4xl">Loved by Germanian punters</h2>
+            <h2 className="text-3xl font-bold md:text-4xl">Loved by German punters</h2>
             <p className="mt-3 text-muted-foreground">Real wins from real subscribers.</p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -121,7 +121,7 @@ function Home() {
         <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(circle at 70% 30%, var(--primary-glow), transparent 60%)" }} />
         <div className="container relative mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold md:text-5xl">Ready to win smarter?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/80">Join thousands of Germanian punters cashing out with ODDSPrime today.</p>
+          <p className="mx-auto mt-4 max-w-xl text-navy-foreground/80">Join thousands of German punters cashing out with ODDSPrime today.</p>
           <Link to="/signup"><Button size="lg" className="mt-8 h-12 px-10 text-base font-semibold">Create Free Account</Button></Link>
         </div>
       </section>

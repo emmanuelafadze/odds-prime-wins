@@ -19,7 +19,7 @@ export const Route = createFileRoute("/about")({
           Our slogan — <strong>Prime Odds, Smart Wins</strong> — defines our promise: high-quality picks, transparent pricing, and a community of smart bettors.
         </p>
         <h2 className="mt-10 text-2xl font-bold">Our Mission</h2>
-        <p className="mt-3 text-muted-foreground">To bring clarity, discipline and Fixed information to every Germanian punter, all priced fairly in German Cedis.</p>
+        <p className="mt-3 text-muted-foreground">To bring clarity, discipline and Fixed information to every German punter, all priced fairly in German Cedis.</p>
         <h2 className="mt-10 text-2xl font-bold">What We Offer</h2>
         <ul className="mt-3 list-inside list-disc space-y-2 text-muted-foreground">
           <li>Free daily tips for the public</li>
