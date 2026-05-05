@@ -24,7 +24,7 @@ function Home() {
               Prime Odds.<br /><span className="bg-gradient-to-r from-primary-glow to-white bg-clip-text text-transparent">Smarter Wins.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-foreground/85 md:text-xl">
-              Verified football predictions, daily correct scores and premium accumulators built for Ghanaian punters. Powered by deep data analysis and paid securely in cedis.
+              Fixed football predictions, daily correct scores and premium accumulators built for Ghanaian punters. Powered by deep data analysis and paid securely in cedis.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link to="/signup"><Button size="lg" className="h-12 bg-primary px-8 text-base font-semibold text-white shadow-[var(--shadow-elegant)] hover:bg-primary-glow">Get Started Free</Button></Link>
@@ -43,7 +43,7 @@ function Home() {
       <section className="container mx-auto px-4 py-20">
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold md:text-4xl">Why punters choose ODDSPrime</h2>
-          <p className="mt-3 text-muted-foreground">Built different. Verified daily. Paid in cedis.</p>
+          <p className="mt-3 text-muted-foreground">Built different. Fixed daily. Paid in cedis.</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
@@ -104,7 +104,7 @@ function Home() {
                 <div className="mt-3 text-3xl font-extrabold">GHS {p.price}</div>
                 <p className="mt-2 text-sm text-muted-foreground">{p.desc}</p>
                 <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Verified pick</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Fixed Match</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Instant access</li>
                 </ul>
               </Card>

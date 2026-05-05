@@ -55,7 +55,7 @@ function Pricing() {
               <div className="mt-3 text-4xl font-extrabold">GHS {p.price}</div>
               <p className="mt-2 text-sm text-muted-foreground">{p.desc}</p>
               <ul className="mt-4 flex-1 space-y-2 text-sm">
-                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Verified analysis</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Fixed analysis</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Instant unlock</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> {k === "premium" ? "3 picks in a row" : "24-hour access"}</li>
               </ul>

@@ -34,7 +34,7 @@ export const Route = createRootRoute({
       { name: "keywords", content: "Ghana football predictions, correct score, betting tips, Paystack, ODDSPrime, accumulator odds" },
       { name: "author", content: "ODDSPrime" },
       { property: "og:title", content: "ODDSPrime — Prime Odds, Smart Wins" },
-      { property: "og:description", content: "Premium football predictions for Ghana. Verified, accurate, fast." },
+      { property: "og:description", content: "Premium football predictions for Ghana. Fixed, accurate, fast." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://oddsprime.online" },
       { property: "og:image", content: "https://oddsprime.online/og-image.jpg" },

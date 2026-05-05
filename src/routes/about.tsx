@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 export const Route = createFileRoute("/about")({
   head: () => ({ meta: [
     { title: "About — ODDSPrime" },
-    { name: "description", content: "Ghana's premier football prediction platform offering verified daily tips and correct scores." },
+    { name: "description", content: "Ghana's premier football prediction platform offering Fixed daily tips and correct scores." },
     { property: "og:title", content: "About ODDSPrime" },
     { property: "og:description", content: "Why ODDSPrime is Ghana's most trusted tipster." },
   ]}),
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/about")({
           Our slogan — <strong>Prime Odds, Smart Wins</strong> — defines our promise: high-quality picks, transparent pricing, and a community of smart bettors.
         </p>
         <h2 className="mt-10 text-2xl font-bold">Our Mission</h2>
-        <p className="mt-3 text-muted-foreground">To bring clarity, discipline and verified information to every Ghanaian punter, all priced fairly in Ghana Cedis.</p>
+        <p className="mt-3 text-muted-foreground">To bring clarity, discipline and Fixed information to every Ghanaian punter, all priced fairly in Ghana Cedis.</p>
         <h2 className="mt-10 text-2xl font-bold">What We Offer</h2>
         <ul className="mt-3 list-inside list-disc space-y-2 text-muted-foreground">
           <li>Free daily tips for the public</li>
