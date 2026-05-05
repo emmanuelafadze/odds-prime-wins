@@ -32,7 +32,7 @@ function Home() {
             </div>
             <div className="mt-12 flex flex-wrap gap-8 text-sm text-navy-foreground/80">
               <div><div className="text-3xl font-bold text-white">12K+</div>Active punters</div>
-              <div><div className="text-3xl font-bold text-white">87%</div>Win rate</div>
+              <div><div className="text-3xl font-bold text-white">101%</div>Win rate</div>
               <div><div className="text-3xl font-bold text-white">5★</div>Trusted by players</div>
             </div>
           </div>
