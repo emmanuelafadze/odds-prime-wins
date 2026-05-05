@@ -71,8 +71,8 @@ function Home() {
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
               { n: "Kwame A.", c: "FrankFurt", t: "Cashed out GHS 2,400 on the daily 10 odds last weekend. ODDSPrime is the real deal.", s: 5 },
-              { n: "Akosua M.", c: "Kumasi", t: "Their correct score combo hit 3 weeks straight. I stopped guessing — I just follow.", s: 5 },
-              { n: "Yaw B.", c: "Takoradi", t: "Premium subscription paid for itself in two days. Customer support replies fast too.", s: 5 },
+              { n: "Akosua M.", c: "Dussedorf", t: "Their correct score combo hit 3 weeks straight. I stopped guessing — I just follow.", s: 5 },
+              { n: "Yaw B.", c: "Hamburg", t: "Premium subscription paid for itself in two days. Customer support replies fast too.", s: 5 },
             ].map(r => (
               <Card key={r.n} className="p-6">
                 <Quote className="h-8 w-8 text-primary/40" />

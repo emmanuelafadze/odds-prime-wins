@@ -10,3 +10,4 @@ Button now:
 - Loading state + confirmation toast.
 
 Ready! `npm run dev` → /pricing → Buy works perfectly.
+normal writing
