@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PredictionsRouteImport } from './routes/predictions'
+import { Route as FreePredictionsRouteImport } from './routes/free-predictions'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DisclaimerRouteImport } from './routes/disclaimer'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -31,6 +33,16 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PredictionsRoute = PredictionsRouteImport.update({
+  id: '/predictions',
+  path: '/predictions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FreePredictionsRoute = FreePredictionsRouteImport.update({
+  id: '/free-predictions',
+  path: '/free-predictions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaqRoute = FaqRouteImport.update({
@@ -65,6 +77,8 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/disclaimer': typeof DisclaimerRoute
   '/faq': typeof FaqRoute
+  '/free-predictions': typeof FreePredictionsRoute
+  '/predictions': typeof PredictionsRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -75,6 +89,8 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/disclaimer': typeof DisclaimerRoute
   '/faq': typeof FaqRoute
+  '/free-predictions': typeof FreePredictionsRoute
+  '/predictions': typeof PredictionsRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -86,6 +102,8 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/disclaimer': typeof DisclaimerRoute
   '/faq': typeof FaqRoute
+  '/free-predictions': typeof FreePredictionsRoute
+  '/predictions': typeof PredictionsRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -98,6 +116,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/disclaimer'
     | '/faq'
+    | '/free-predictions'
+    | '/predictions'
     | '/pricing'
     | '/privacy'
     | '/terms'
@@ -108,6 +128,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/disclaimer'
     | '/faq'
+    | '/free-predictions'
+    | '/predictions'
     | '/pricing'
     | '/privacy'
     | '/terms'
@@ -118,6 +140,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/disclaimer'
     | '/faq'
+    | '/free-predictions'
+    | '/predictions'
     | '/pricing'
     | '/privacy'
     | '/terms'
@@ -129,6 +153,8 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DisclaimerRoute: typeof DisclaimerRoute
   FaqRoute: typeof FaqRoute
+  FreePredictionsRoute: typeof FreePredictionsRoute
+  PredictionsRoute: typeof PredictionsRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
@@ -155,6 +181,20 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/predictions': {
+      id: '/predictions'
+      path: '/predictions'
+      fullPath: '/predictions'
+      preLoaderRoute: typeof PredictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/free-predictions': {
+      id: '/free-predictions'
+      path: '/free-predictions'
+      fullPath: '/free-predictions'
+      preLoaderRoute: typeof FreePredictionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/faq': {
@@ -201,6 +241,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DisclaimerRoute: DisclaimerRoute,
   FaqRoute: FaqRoute,
+  FreePredictionsRoute: FreePredictionsRoute,
+  PredictionsRoute: PredictionsRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
