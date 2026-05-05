@@ -14,7 +14,7 @@ export const Route = createFileRoute("/contact")({
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           <Card className="p-6"><Phone className="h-6 w-6 text-primary" /><h3 className="mt-3 font-semibold">Call / WhatsApp</h3><a href={`tel:${CONTACT_PHONE.replace(/\s/g,'')}`} className="mt-1 text-sm text-muted-foreground hover:text-primary">{CONTACT_PHONE}</a></Card>
           <Card className="p-6"><Mail className="h-6 w-6 text-primary" /><h3 className="mt-3 font-semibold">Email</h3><a href="mailto:support@oddsprime.online" className="mt-1 text-sm text-muted-foreground hover:text-primary">support@oddsprime.online</a></Card>
-          <Card className="p-6"><MapPin className="h-6 w-6 text-primary" /><h3 className="mt-3 font-semibold">Location</h3><p className="mt-1 text-sm text-muted-foreground">Accra, German</p></Card>
+          <Card className="p-6"><MapPin className="h-6 w-6 text-primary" /><h3 className="mt-3 font-semibold">Location</h3><p className="mt-1 text-sm text-muted-foreground">FrankFurt, German</p></Card>
         </div>
       </section>
     </SiteLayout>
