@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-
 import appCss from "../styles.css?url";
+import { AuthProvider } from "@/lib/auth";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -29,20 +30,24 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "ODDSPrime — Prime Odds, Smart Wins | Ghana's Best Football Predictions" },
+      { name: "description", content: "Accurate football predictions and correct scores for Ghana. Free daily tips and premium picks. Pay with Paystack in GHS." },
+      { name: "keywords", content: "Ghana football predictions, correct score, betting tips, Paystack, ODDSPrime, accumulator odds" },
+      { name: "author", content: "ODDSPrime" },
+      { property: "og:title", content: "ODDSPrime — Prime Odds, Smart Wins" },
+      { property: "og:description", content: "Premium football predictions for Ghana. Verified, accurate, fast." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { property: "og:url", content: "https://oddsprime.online" },
+      { property: "og:image", content: "https://oddsprime.online/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "ODDSPrime — Prime Odds, Smart Wins" },
+      { name: "twitter:description", content: "Ghana's premium football prediction platform." },
+      { name: "twitter:image", content: "https://oddsprime.online/og-image.jpg" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
+      { rel: "canonical", href: "https://oddsprime.online" },
     ],
   }),
   shellComponent: RootShell,
@@ -65,5 +70,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <Outlet />
+      <Toaster />
+    </AuthProvider>
+  );
 }
