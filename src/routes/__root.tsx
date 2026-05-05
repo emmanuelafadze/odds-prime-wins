@@ -46,7 +46,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "canonical", href: "https://oddsprime.online" },
     ],
   }),
