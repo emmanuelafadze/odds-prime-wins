@@ -15,18 +15,30 @@ function loadScript(): Promise<void> {
   return loading;
 }
 
+async function getGhsAmount(usd: number): Promise<number> {
+  try {
+    const res = await fetch('https://api.exchangerate.host/convert?from=USD&to=GHS&amount=' + usd);
+    const data = await res.json();
+    return Math.round(data.result * 100) / 100;
+  } catch {
+    // fallback rate ~16 GHS/USD
+    return usd * 16;
+  }
+}
+
 export async function payWithPaystack(opts: {
-  email: string; amountGhs: number; metadata?: Record<string, any>;
-  onSuccess: (ref: string) => void; onClose?: () => void;
+  email: string; amountUsd: number; metadata?: Record<string, any>;
+  onSuccess: (ref: string, ghsAmount: number) => void; onClose?: () => void;
 }) {
+  const amountGhs = await getGhsAmount(opts.amountUsd);
   await loadScript();
   const handler = (window as any).PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email: opts.email,
-    amount: Math.round(opts.amountGhs * 100),
+    amount: Math.round(amountGhs * 100),
     currency: "GHS",
-    metadata: opts.metadata ?? {},
-    callback: (resp: any) => opts.onSuccess(resp.reference),
+    metadata: { ...opts.metadata, usd_price: opts.amountUsd, amount_ghs: amountGhs },
+    callback: (resp: any) => opts.onSuccess(resp.reference, amountGhs),
     onClose: () => opts.onClose?.(),
   });
   handler.openIframe();

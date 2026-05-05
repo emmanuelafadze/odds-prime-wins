@@ -234,39 +234,154 @@ function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: st
   );
 }
 
-function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: ()=>void; onSave: (p: Partial<Pred>)=>void }) {
-  const [f, setF] = useState<Partial<Pred>>(initial);
-  const set = (k: keyof Pred, v: any) => setF(p => ({ ...p, [k]: v }));
+interface MatchType { home_team: string; away_team: string; odds?: number; prediction: string; }
+
+const tierMap = {
+  single: 1,
+  combo: 2,
+  five: 5,
+  seven: 7,
+  ten: 10,
+} as Record<string, number>;
+
+function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchType; onUpdate: (updates: Partial<MatchType>) => void }) {
+  return (
+    <div className="border rounded-lg p-4 mb-4">
+      <h4 className="font-semibold mb-2">Match {index + 1}</h4>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label>Home Team</Label>
+          <Input value={match.home_team} onChange={e => onUpdate({ home_team: e.target.value })} />
+        </div>
+        <div>
+          <Label>Away Team</Label>
+          <Input value={match.away_team} onChange={e => onUpdate({ away_team: e.target.value })} />
+        </div>
+        <div>
+          <Label>Odds (optional)</Label>
+          <Input type="number" step="0.01" value={match.odds ?? ''} onChange={e => onUpdate({ odds: e.target.value ? Number(e.target.value) : undefined })} />
+        </div>
+        <div>
+          <Label>Prediction</Label>
+          <Input value={match.prediction} onChange={e => onUpdate({ prediction: e.target.value })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true });
+  const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ home_team: initial.home_team, away_team: initial.away_team || '', odds: initial.odds, prediction: initial.prediction || '' }] : []);
+  
+  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates }));
+  const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
+  
+  const handleTierChange = (tier: string) => {
+    updateGlobal({ tier });
+    const count = tierMap[tier as keyof typeof tierMap] || 1;
+    setMatches(Array.from({ length: count }, () => ({ home_team: '', away_team: '', prediction: '' })));
+  };
+
+  const validate = () => {
+    if (!global.match_date || !global.league) return 'Date and League required';
+    if (matches.some(m => !m.home_team || !m.away_team || !m.prediction)) return 'All matches must have Home, Away, Prediction';
+    return '';
+  };
+
+  const save = async () => {
+    const error = validate();
+    if (error) return toast.error(error);
+
+    for (const match of matches) {
+      const payload = {
+        match_date: global.match_date,
+        kickoff: global.kickoff || null,
+        league: global.league,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        prediction: match.prediction,
+        odds: match.odds || null,
+        tier: global.tier,
+        status: global.status,
+        published: global.published,
+      };
+      const { error: insertError } = await supabase.from('predictions').insert(payload);
+      if (insertError) {
+        toast.error(`Error saving match ${matches.indexOf(match) + 1}: ${insertError.message}`);
+        return;
+      }
+    }
+    toast.success(`${matches.length} prediction(s) saved!`);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <Card className="w-full max-w-2xl p-6" onClick={e=>e.stopPropagation()}>
-        <h3 className="text-xl font-bold">{f.id?"Edit":"New"} Prediction</h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div><Label>Match Date</Label><Input type="date" value={f.match_date||""} onChange={e=>set("match_date",e.target.value)}/></div>
-          <div><Label>Kickoff</Label><Input type="time" value={f.kickoff||""} onChange={e=>set("kickoff",e.target.value)}/></div>
-          <div><Label>League</Label><Input value={f.league||""} onChange={e=>set("league",e.target.value)}/></div>
-          <div><Label>Odds</Label><Input type="number" step="0.01" value={f.odds??""} onChange={e=>set("odds",e.target.value)}/></div>
-          <div><Label>Home Team</Label><Input value={f.home_team||""} onChange={e=>set("home_team",e.target.value)}/></div>
-          <div><Label>Away Team</Label><Input value={f.away_team||""} onChange={e=>set("away_team",e.target.value)}/></div>
-          <div className="sm:col-span-2"><Label>Prediction (e.g. 2-1, BTTS, Over 2.5)</Label><Input value={f.prediction||""} onChange={e=>set("prediction",e.target.value)}/></div>
-          <div>
-            <Label>Tier</Label>
-            <Select value={f.tier||"free"} onValueChange={v=>set("tier",v)}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
-              <SelectContent>{TIERS.map(t=><SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
-            </Select>
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold mb-4">New Prediction</h3>
+        
+        {/* Global Fields */}
+        <div className="grid gap-4 mb-6 p-4 border rounded-lg">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Match Date</Label>
+              <Input type="date" value={global.match_date} onChange={e => updateGlobal({ match_date: e.target.value })} />
+            </div>
+            <div>
+              <Label>Kickoff Time</Label>
+              <Input type="time" value={global.kickoff} onChange={e => updateGlobal({ kickoff: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label>League</Label>
+              <Input value={global.league} onChange={e => updateGlobal({ league: e.target.value })} />
+            </div>
           </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={f.status||"pending"} onValueChange={v=>set("status",v)}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
-              <SelectContent>{["pending","won","lost","void"].map(t=><SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Tier</Label>
+              <Select value={global.tier} onValueChange={handleTierChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(['single', 'combo', 'five', 'seven', 'ten'] as const).map(t => (
+                    <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={global.status} onValueChange={v => updateGlobal({ status: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['pending', 'won', 'lost', 'void'].map(t => (
+                    <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
+
+        {/* Dynamic Match Blocks */}
+        <div className="space-y-4">
+          {matches.map((match, index) => (
+            <MatchBlock 
+              key={index}
+              index={index}
+              match={match}
+              onUpdate={updates => updateMatch(index, updates)}
+            />
+          ))}
+        </div>
+
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={()=>onSave(f)}>Save</Button>
+          <Button onClick={save}>Save {matches.length > 1 ? `${matches.length} Matches` : 'Match'}</Button>
         </div>
       </Card>
     </div>
