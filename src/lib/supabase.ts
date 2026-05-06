@@ -9,5 +9,5 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export const PAYSTACK_PUBLIC_KEY = "pk_live_3fd60f2bde18a116e1b7173630cedf4744b678db";
-export const CONTACT_PHONE = "+233 50 895 7567";
+export const CONTACT_PHONE = "+1 469-234-6759";
 export const SITE_URL = "https://oddsprime.online";
