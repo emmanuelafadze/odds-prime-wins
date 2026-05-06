@@ -81,7 +81,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
                 </div>
                 <div className="text-muted-foreground">{m.matchTime}</div>
                 <div>{m.home_team} <span className="text-muted-foreground">vs</span> {m.away_team}</div>
-                {m.prediction && <div className="text-primary font-semibold">Tip: {m.prediction}</div>}
+                {!isLocked && m.prediction && <div className="text-primary font-semibold">Tip: {m.prediction}</div>}
               </div>
             );
           })}
