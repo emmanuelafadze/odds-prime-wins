@@ -83,14 +83,17 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
 {!isLocked && p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
       <div className="mt-3 space-y-2">
         <div className="flex gap-2">
-          <button type="button" onClick={() => setBookmaker("sportybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "sportybet" ? "border-[#E0002B] bg-[#E0002B] text-white" : "border-border"}`}>
-            <span className="mr-1 inline-block rounded bg-white px-1 text-[#E0002B]">S</span>SportyBet
+          <button type="button" onClick={() => setBookmaker("sportybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "sportybet" ? "border-[#D90429] bg-[#D90429] text-white" : "border-border bg-white"}`}>
+            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-white text-[10px] font-black italic text-[#D90429]">S</span>
+            <span className="font-black tracking-tight italic">SportyBet</span>
           </button>
-          <button type="button" onClick={() => setBookmaker("betway")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "betway" ? "border-[#00A651] bg-[#00A651] text-white" : "border-border"}`}>
-            <span className="mr-1 inline-block rounded bg-black px-1 text-[#00A651]">B</span>Betway
+          <button type="button" onClick={() => setBookmaker("betway")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "betway" ? "border-black bg-black text-white" : "border-border bg-white"}`}>
+            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#7CFC00] text-[10px] font-black text-[#7CFC00]">b</span>
+            <span className={`font-black tracking-tight ${bookmaker === "betway" ? "text-[#7CFC00]" : "text-black"}`}>betway</span>
           </button>
-          <button type="button" onClick={() => setBookmaker("mybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "mybet" ? "border-[#1D4ED8] bg-[#1D4ED8] text-white" : "border-border"}`}>
-            <span className="mr-1 inline-block rounded bg-white px-1 text-[#1D4ED8]">M</span>MyBet
+          <button type="button" onClick={() => setBookmaker("mybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "mybet" ? "border-[#0F2C8A] bg-[#0F2C8A] text-white" : "border-border bg-white"}`}>
+            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[#FFD54A] text-[10px] font-black text-[#0F2C8A]">M</span>
+            <span className="font-extrabold tracking-tight"><span className={bookmaker === "mybet" ? "text-[#FFD54A]" : "text-[#0F2C8A]"}>my</span><span className={bookmaker === "mybet" ? "text-white" : "text-[#0F2C8A]"}>bet</span></span>
           </button>
         </div>
         <div className="rounded-md border p-2 text-sm">
