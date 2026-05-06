@@ -70,7 +70,7 @@ function Home() {
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              { n: "Derrick A.", c: "FrankFurt", t: "Cashed out GHS 2,400 on the daily 10 odds last weekend. ODDSPrime is the real deal.", s: 5 },
+              { n: "Derrick A.", c: "FrankFurt", t: "Cashed out €58,000 on the daily 10 odds last weekend. ODDSPrime is the real deal.", s: 5 },
               { n: "Magdalene M.", c: "Dussedorf", t: "Their correct score combo hit 3 weeks straight. I stopped guessing — I just follow.", s: 5 },
               { n: "Chris B.", c: "Hamburg", t: "Premium subscription paid for itself in two days. Customer support replies fast too.", s: 5 },
             ].map(r => (

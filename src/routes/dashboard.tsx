@@ -30,7 +30,7 @@ function Dash() {
     if (!user) return;
     supabase.from("purchases").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
       .then(({ data }) => setPurchases((data as Purchase[]) ?? []));
-    supabase.from("predictions").select("*").eq("published", true).order("match_date", { ascending: false }).limit(50)
+    supabase.from("predictions").select("*").order("match_date", { ascending: false }).limit(50)
       .then(({ data }) => setPreds((data as Prediction[]) ?? []));
   }, [user]);
 
