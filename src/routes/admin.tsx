@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity, Lock, Unlock } from "lucide-react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
 const TIERS = ["free","single","combo","five","ten","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
-interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
+interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; is_locked?: boolean | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
 interface Purchase { id:string; user_id:string; tier:string; amount_ghs:number; created_at:string; }
 
 function Admin() {
@@ -84,7 +84,7 @@ function Admin() {
       match_date: p.match_date, kickoff: p.kickoff || null, league: p.league || null,
       home_team: p.home_team, away_team: p.away_team, prediction: p.prediction,
       odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
-      status: p.status || "pending", published: p.published ?? true, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
+      status: p.status || "pending", published: p.published ?? true, is_locked: p.is_locked ?? false, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
     if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
@@ -100,6 +100,12 @@ function Admin() {
   };
   const togglePub = async (p: Pred) => {
     await supabase.from("predictions").update({ published: !p.published }).eq("id", p.id);
+    load();
+  };
+
+  const toggleLock = async (p: Pred) => {
+    await supabase.from("predictions").update({ is_locked: !p.is_locked }).eq("id", p.id);
+    toast.success(!p.is_locked ? "Ticket locked" : "Ticket unlocked");
     load();
   };
 
@@ -176,7 +182,7 @@ function Admin() {
             <Card className="overflow-x-auto p-0">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left"><tr>
-                  <th className="px-4 py-3">Date</th><th>Match</th><th>Tip</th><th>Tier</th><th>Odds</th><th>Status</th><th>Pub</th><th></th>
+                  <th className="px-4 py-3">Date</th><th>Match</th><th>Tip</th><th>Tier</th><th>Odds</th><th>Status</th><th>Pub</th><th>Lock</th><th></th>
                 </tr></thead>
                 <tbody>
                   {(preds??[]).map(p=>(
@@ -188,14 +194,16 @@ function Admin() {
                       <td>{p.odds ?? "-"}</td>
                       <td className="capitalize">{p.status}</td>
                       <td>{p.published ? "✓" : "—"}</td>
+                      <td>{p.is_locked ? "🔒" : "🔓"}</td>
                       <td className="space-x-1 px-2 py-2">
                         <Button size="icon" variant="ghost" onClick={()=>togglePub(p)} title="Toggle publish">{p.published?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</Button>
+                        <Button size="icon" variant="ghost" onClick={()=>toggleLock(p)} title={p.is_locked ? "Unlock ticket" : "Lock ticket"}>{p.is_locked?<Unlock className="h-4 w-4"/>:<Lock className="h-4 w-4"/>}</Button>
                         <Button size="icon" variant="ghost" onClick={()=>setEditing(p)}><Edit className="h-4 w-4"/></Button>
                         <Button size="icon" variant="ghost" onClick={()=>remove(p.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                       </td>
                     </tr>
                   ))}
-                  {(preds??[]).length===0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No predictions yet.</td></tr>}
+                  {(preds??[]).length===0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No predictions yet.</td></tr>}
                 </tbody>
               </table>
             </Card>
@@ -284,7 +292,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 }
 
 function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
-  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true });
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ matchId: crypto.randomUUID(), home_team: initial.home_team, away_team: initial.away_team || '', league: initial.league || '', matchTime: initial.kickoff || '', odds: initial.odds, prediction: initial.prediction || '', status: (initial.status as MatchType["status"]) || "pending" }] : [{ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" }]);
   
@@ -324,6 +332,7 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         tier: global.tier,
         status: comboStatus,
         published: global.published,
+        is_locked: global.is_locked,
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -346,6 +355,7 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         tier: global.tier,
         status: match.status || global.status,
         published: global.published,
+        is_locked: global.is_locked,
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -405,6 +415,18 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
                   {['pending', 'won', 'lost', 'void'].map(t => (
                     <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Ticket Access</Label>
+              <Select value={global.is_locked ? "locked" : "unlocked"} onValueChange={v => updateGlobal({ is_locked: v === "locked" })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unlocked">UNLOCKED</SelectItem>
+                  <SelectItem value="locked">LOCKED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
