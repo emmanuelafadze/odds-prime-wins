@@ -33,7 +33,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
-  const isLocked = p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending");
+  const isLocked = p.tier === "free" ? false : p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending");
   let comboMatches: ComboMatch[] = [];
   if (p.tier === "combo") {
     try {
@@ -98,7 +98,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
         </div>
         <div className="rounded-md border p-2 text-sm">
           <span className="text-muted-foreground">Bet Code: </span>
-          <span className="font-semibold">{locked ? "LOCKED" : (bookmakerCode || "No code available")}</span>
+          <span className="font-semibold">{isLocked ? "LOCKED" : (bookmakerCode || "No code available")}</span>
         </div>
       </div>
     </Card>
