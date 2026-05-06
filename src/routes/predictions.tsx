@@ -29,16 +29,55 @@ function Pred() {
   const [purchasedTiers, setPurchasedTiers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    supabase.from("predictions").select("*").order("match_date", { ascending: false }).limit(100)
-      .then(({ data }) => setItems((data as Prediction[]) ?? []));
-    if (user) {
-      supabase.from("purchases").select("tier,expires_at").eq("user_id", user.id).gt("expires_at", new Date().toISOString())
-        .then(({ data }) => {
-          const s = new Set<string>();
-          (data ?? []).forEach((p: any) => { s.add(p.tier); if (p.tier === "premium") ["single","combo","five","ten"].forEach(t=>s.add(t)); });
-          setPurchasedTiers(s);
+    let active = true;
+
+    const loadPredictions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("predictions")
+          .select("*")
+          .order("match_date", { ascending: false })
+          .limit(100);
+
+        if (error) throw error;
+        if (active) setItems((data as Prediction[]) ?? []);
+      } catch {
+        if (active) setItems([]);
+      }
+    };
+
+    const loadPurchases = async () => {
+      if (!user) {
+        if (active) setPurchasedTiers(new Set());
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("purchases")
+          .select("tier,expires_at")
+          .eq("user_id", user.id)
+          .gt("expires_at", new Date().toISOString());
+
+        if (error) throw error;
+
+        const s = new Set<string>();
+        (data ?? []).forEach((p: any) => {
+          s.add(p.tier);
+          if (p.tier === "premium") ["single", "combo", "five", "ten"].forEach((t) => s.add(t));
         });
-    }
+        if (active) setPurchasedTiers(s);
+      } catch {
+        if (active) setPurchasedTiers(new Set());
+      }
+    };
+
+    loadPredictions();
+    loadPurchases();
+
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   return (
