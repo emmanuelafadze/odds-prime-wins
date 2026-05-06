@@ -19,6 +19,16 @@ interface ComboMatch {
   status: "pending" | "won" | "lost";
 }
 
+interface ComboMatch {
+  matchId: string;
+  home_team: string;
+  away_team: string;
+  league: string;
+  matchTime: string;
+  odds?: number;
+  status: "pending" | "won" | "lost";
+}
+
 export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
