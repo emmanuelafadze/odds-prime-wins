@@ -19,16 +19,6 @@ interface ComboMatch {
   status: "pending" | "won" | "lost";
 }
 
-interface ComboMatch {
-  matchId: string;
-  home_team: string;
-  away_team: string;
-  league: string;
-  matchTime: string;
-  odds?: number;
-  status: "pending" | "won" | "lost";
-}
-
 export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
@@ -42,6 +32,19 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
     } catch {}
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
+  const displayTip = (() => {
+    if (p.tier !== "combo") return p.prediction;
+
+    try {
+      const parsed = JSON.parse(p.prediction || "{}");
+      if (typeof parsed.tip === "string" && parsed.tip.trim()) return parsed.tip;
+      if (typeof parsed.prediction === "string" && parsed.prediction.trim()) return parsed.prediction;
+      if (typeof parsed.selection === "string" && parsed.selection.trim()) return parsed.selection;
+      if (comboMatches.length > 0) return `${comboMatches.length}-Match Combo`;
+    } catch {}
+
+    return "Combo matches listed below";
+  })();
   return (
     <Card className="overflow-hidden p-5 transition hover:shadow-[var(--shadow-elegant)]">
       <div className="flex items-center justify-between">
@@ -77,7 +80,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
             <Lock className="h-4 w-4" /> <span>LOCKED</span>
           </div>
         ) : (
-          <div className="mt-1 text-base font-bold text-primary">{p.prediction}</div>
+          <div className="mt-1 text-base font-bold text-primary">{displayTip}</div>
         )}
       </div>
 {!isLocked && p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
