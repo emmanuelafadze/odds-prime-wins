@@ -8,10 +8,27 @@ export interface Prediction {
   odds?: number | null; tier: string; status: string;
 }
 
+interface ComboMatch {
+  matchId: string;
+  home_team: string;
+  away_team: string;
+  league: string;
+  matchTime: string;
+  odds?: number;
+  status: "pending" | "won" | "lost";
+}
+
 export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
-  const isLocked = locked || status === "pending";
+  const isLocked = p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending");
+  let comboMatches: ComboMatch[] = [];
+  if (p.tier === "combo") {
+    try {
+      const parsed = JSON.parse(p.prediction || "{}");
+      comboMatches = Array.isArray(parsed.matches) ? parsed.matches : [];
+    } catch {}
+  }
   return (
     <Card className="overflow-hidden p-5 transition hover:shadow-[var(--shadow-elegant)]">
       <div className="flex items-center justify-between">
@@ -23,6 +40,23 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
         {p.kickoff && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {p.kickoff.slice(0,5)}</span>}
       </div>
       <h3 className="mt-3 text-lg font-bold">{p.home_team} <span className="text-muted-foreground">vs</span> {p.away_team}</h3>
+      {p.tier === "combo" && comboMatches.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {comboMatches.map((m) => {
+            const mStatusColor = m.status === "won" ? "bg-green-500/15 text-green-600" : m.status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
+            return (
+              <div key={m.matchId} className="rounded-md border p-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>{m.league}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${mStatusColor}`}>{m.status.toUpperCase()}</span>
+                </div>
+                <div className="text-muted-foreground">{m.matchTime}</div>
+                <div>{m.home_team} <span className="text-muted-foreground">vs</span> {m.away_team}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="mt-4 rounded-lg border bg-secondary/40 p-3">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">Tip</div>
         {isLocked ? (
