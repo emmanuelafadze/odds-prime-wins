@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
 const TIERS = ["free","single","combo","five","ten","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
-interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; }
+interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
 interface Purchase { id:string; user_id:string; tier:string; amount_ghs:number; created_at:string; }
 
 function Admin() {
@@ -84,7 +84,7 @@ function Admin() {
       match_date: p.match_date, kickoff: p.kickoff || null, league: p.league || null,
       home_team: p.home_team, away_team: p.away_team, prediction: p.prediction,
       odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
-      status: p.status || "pending", published: p.published ?? true,
+      status: p.status || "pending", published: p.published ?? true, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
     if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
@@ -234,7 +234,7 @@ function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: st
   );
 }
 
-interface MatchType { home_team: string; away_team: string; odds?: number; prediction: string; }
+interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost"; }
 
 const tierMap = {
   single: 1,
@@ -258,12 +258,25 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
           <Input value={match.away_team} onChange={e => onUpdate({ away_team: e.target.value })} />
         </div>
         <div>
+          <Label>League</Label>
+          <Input value={match.league} onChange={e => onUpdate({ league: e.target.value })} />
+        </div>
+        <div>
+          <Label>Match Time</Label>
+          <Input type="time" value={match.matchTime} onChange={e => onUpdate({ matchTime: e.target.value })} />
+        </div>
+        <div>
           <Label>Odds (optional)</Label>
           <Input type="number" step="0.01" value={match.odds ?? ''} onChange={e => onUpdate({ odds: e.target.value ? Number(e.target.value) : undefined })} />
         </div>
         <div>
-          <Label>Prediction</Label>
-          <Input value={match.prediction} onChange={e => onUpdate({ prediction: e.target.value })} />
+          <Label>Status</Label>
+          <Select value={match.status} onValueChange={v => onUpdate({ status: v as MatchType["status"] })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["pending", "won", "lost"].map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
@@ -272,20 +285,25 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 
 function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true });
-  const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ home_team: initial.home_team, away_team: initial.away_team || '', odds: initial.odds, prediction: initial.prediction || '' }] : []);
+  const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
+  const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ matchId: crypto.randomUUID(), home_team: initial.home_team, away_team: initial.away_team || '', league: initial.league || '', matchTime: initial.kickoff || '', odds: initial.odds, prediction: initial.prediction || '', status: (initial.status as MatchType["status"]) || "pending" }] : [{ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" }]);
   
   const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates }));
   const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
   
   const handleTierChange = (tier: string) => {
     updateGlobal({ tier });
-    const count = tierMap[tier as keyof typeof tierMap] || 1;
-    setMatches(Array.from({ length: count }, () => ({ home_team: '', away_team: '', prediction: '' })));
+    if (tier !== "combo") {
+      const count = tierMap[tier as keyof typeof tierMap] || 1;
+      setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
+    } else if (matches.length === 0) {
+      setMatches([{ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" }]);
+    }
   };
 
   const validate = () => {
-    if (!global.match_date || !global.league) return 'Date and League required';
-    if (matches.some(m => !m.home_team || !m.away_team || !m.prediction)) return 'All matches must have Home, Away, Prediction';
+    if (!global.match_date) return 'Date required';
+    if (matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime)) return 'All matches must have Team A, Team B, League and Match Time';
     return '';
   };
 
@@ -293,18 +311,44 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
     const error = validate();
     if (error) return toast.error(error);
 
+    if (global.tier === "combo") {
+      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => m.status === "won") ? "won" : "pending";
+      const payload = {
+        match_date: global.match_date,
+        kickoff: null,
+        league: "Combo",
+        home_team: matches[0]?.home_team || "Combo",
+        away_team: matches[0]?.away_team || "Ticket",
+        prediction: JSON.stringify({ comboId: initial.id || crypto.randomUUID(), matches }),
+        odds: null,
+        tier: global.tier,
+        status: comboStatus,
+        published: global.published,
+        sportybet_code: codes.sportybet_code || null,
+        betway_code: codes.betway_code || null,
+        mybet_code: codes.mybet_code || null,
+      };
+      const { error: insertError } = await supabase.from('predictions').insert(payload);
+      if (insertError) return toast.error(insertError.message);
+      toast.success("Combo saved!");
+      onClose();
+      return;
+    }
     for (const match of matches) {
       const payload = {
         match_date: global.match_date,
-        kickoff: global.kickoff || null,
-        league: global.league,
+        kickoff: match.matchTime || global.kickoff || null,
+        league: match.league || global.league,
         home_team: match.home_team,
         away_team: match.away_team,
         prediction: match.prediction,
         odds: match.odds || null,
         tier: global.tier,
-        status: global.status,
+        status: match.status || global.status,
         published: global.published,
+        sportybet_code: codes.sportybet_code || null,
+        betway_code: codes.betway_code || null,
+        mybet_code: codes.mybet_code || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) {
@@ -371,12 +415,31 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         <div className="space-y-4">
           {matches.map((match, index) => (
             <MatchBlock 
-              key={index}
+              key={match.matchId}
               index={index}
               match={match}
               onUpdate={updates => updateMatch(index, updates)}
             />
           ))}
+          {global.tier === "combo" && (
+            <Button variant="outline" onClick={() => setMatches(m => [...m, { matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" }])}>
+              Add Match
+            </Button>
+          )}
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label>SportyBet Code</Label>
+            <Input value={codes.sportybet_code} onChange={e => setCodes(c => ({ ...c, sportybet_code: e.target.value }))} />
+          </div>
+          <div>
+            <Label>Betway Code</Label>
+            <Input value={codes.betway_code} onChange={e => setCodes(c => ({ ...c, betway_code: e.target.value }))} />
+          </div>
+          <div>
+            <Label>MyBet Code</Label>
+            <Input value={codes.mybet_code} onChange={e => setCodes(c => ({ ...c, mybet_code: e.target.value }))} />
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">

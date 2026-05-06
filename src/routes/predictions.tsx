@@ -29,7 +29,7 @@ function Pred() {
   const [purchasedTiers, setPurchasedTiers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    supabase.from("predictions").select("*").eq("published", true).order("match_date", { ascending: false }).limit(100)
+    supabase.from("predictions").select("*").order("match_date", { ascending: false }).limit(100)
       .then(({ data }) => setItems((data as Prediction[]) ?? []));
     if (user) {
       supabase.from("purchases").select("tier,expires_at").eq("user_id", user.id).gt("expires_at", new Date().toISOString())
