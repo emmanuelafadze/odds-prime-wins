@@ -98,7 +98,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
         </div>
         <div className="rounded-md border p-2 text-sm">
           <span className="text-muted-foreground">Bet Code: </span>
-          <span className="font-semibold">{bookmakerCode || "No code available"}</span>
+          <span className="font-semibold">{locked ? "LOCKED" : (bookmakerCode || "No code available")}</span>
         </div>
       </div>
     </Card>
