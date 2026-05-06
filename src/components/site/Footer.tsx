@@ -36,7 +36,7 @@ export function Footer() {
             <li><Link to="/privacy" className="hover:text-primary">Privacy</Link></li>
             <li><Link to="/disclaimer" className="hover:text-primary">Disclaimer</Link></li>
           </ul>
-          <p className="mt-3 text-sm text-navy-foreground/70">Call: <a href={`tel:${CONTACT_PHONE.replace(/\s/g,'')}`} className="text-primary">{CONTACT_PHONE}</a></p>
+          <p className="mt-3 text-sm text-navy-foreground/70">Call / Signal: <a href={`tel:${CONTACT_PHONE.replace(/\s/g,'')}`} className="text-primary">{CONTACT_PHONE}</a><span className="ml-1">(available on Signal)</span></p>
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-navy-foreground/50">
