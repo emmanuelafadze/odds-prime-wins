@@ -48,7 +48,7 @@ function Dash() {
             <h1 className="text-3xl font-bold">My Dashboard</h1>
             <p className="mt-1 text-muted-foreground">{user.email}</p>
           </div>
-          <Link to="/pricing"><Button>Buy Predictions</Button></Link>
+          <Link to="/pricing"><Button>Buy Tickets</Button></Link>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Card className="p-6"><div className="text-sm text-muted-foreground">Active Subscriptions</div><div className="mt-2 text-3xl font-bold">{active.length}</div></Card>
