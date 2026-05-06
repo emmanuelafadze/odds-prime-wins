@@ -15,6 +15,7 @@ interface ComboMatch {
   away_team: string;
   league: string;
   matchTime: string;
+  prediction?: string;
   odds?: number;
   status: "pending" | "won" | "lost";
 }
@@ -33,15 +34,27 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
   const displayTip = (() => {
-    if (p.tier !== "combo") return p.prediction;
+    const rawPrediction = (p.prediction || "").trim();
 
-    try {
-      const parsed = JSON.parse(p.prediction || "{}");
-      if (typeof parsed.tip === "string" && parsed.tip.trim()) return parsed.tip;
-      if (typeof parsed.prediction === "string" && parsed.prediction.trim()) return parsed.prediction;
-      if (typeof parsed.selection === "string" && parsed.selection.trim()) return parsed.selection;
-      if (comboMatches.length > 0) return `${comboMatches.length}-Match Combo`;
-    } catch {}
+    const parseTipFromJson = (value: string) => {
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed?.tip === "string" && parsed.tip.trim()) return parsed.tip;
+        if (typeof parsed?.prediction === "string" && parsed.prediction.trim()) return parsed.prediction;
+        if (typeof parsed?.selection === "string" && parsed.selection.trim()) return parsed.selection;
+      } catch {}
+      return null;
+    };
+
+    if (p.tier !== "combo") {
+      const parsedTip = parseTipFromJson(rawPrediction);
+      if (parsedTip) return parsedTip;
+      return rawPrediction;
+    }
+
+    const parsedTip = parseTipFromJson(rawPrediction);
+    if (parsedTip) return parsedTip;
+    if (comboMatches.length > 0) return `${comboMatches.length}-Match Combo`;
 
     return "Combo matches listed below";
   })();
@@ -68,6 +81,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
                 </div>
                 <div className="text-muted-foreground">{m.matchTime}</div>
                 <div>{m.home_team} <span className="text-muted-foreground">vs</span> {m.away_team}</div>
+                {m.prediction && <div className="text-primary font-semibold">Tip: {m.prediction}</div>}
               </div>
             );
           })}
