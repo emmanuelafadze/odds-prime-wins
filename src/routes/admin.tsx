@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
 const TIERS = ["free","single","combo","five","ten","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
-interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; is_locked?: boolean | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
+interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; is_locked?: boolean | null; prediction_image_1?: string | null; prediction_image_2?: string | null; prediction_image_3?: string | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
 interface Purchase { id:string; user_id:string; tier:string; amount_ghs:number; created_at:string; }
 
 function Admin() {
@@ -278,6 +278,10 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
           <Input type="number" step="0.01" value={match.odds ?? ''} onChange={e => onUpdate({ odds: e.target.value ? Number(e.target.value) : undefined })} />
         </div>
         <div>
+          <Label>Tip / Prediction</Label>
+          <Input value={match.prediction} onChange={e => onUpdate({ prediction: e.target.value })} placeholder="e.g. Correct Score 2-1" />
+        </div>
+        <div>
           <Label>Status</Label>
           <Select value={match.status} onValueChange={v => onUpdate({ status: v as MatchType["status"] })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -294,24 +298,29 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
-  const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ matchId: crypto.randomUUID(), home_team: initial.home_team, away_team: initial.away_team || '', league: initial.league || '', matchTime: initial.kickoff || '', odds: initial.odds, prediction: initial.prediction || '', status: (initial.status as MatchType["status"]) || "pending" }] : [{ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" }]);
+  const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
+  const initialTier = initial.tier || "single";
+  const initialCount = initialTier === "single" ? 1 : initialTier === "combo" ? 2 : (tierMap[initialTier as keyof typeof tierMap] || 1);
+  const [matches, setMatches] = useState<MatchType[]>(() => {
+    const base = initial.home_team ? [{ matchId: crypto.randomUUID(), home_team: initial.home_team, away_team: initial.away_team || "", league: initial.league || "", matchTime: initial.kickoff || "", odds: initial.odds, prediction: initial.prediction || "", status: (initial.status as MatchType["status"]) || "pending" }] : [];
+    while (base.length < initialCount) base.push({ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" });
+    return base.slice(0, initialCount);
+  });
   
   const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates }));
   const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
   
   const handleTierChange = (tier: string) => {
     updateGlobal({ tier });
-    if (tier !== "combo") {
-      const count = tierMap[tier as keyof typeof tierMap] || 1;
-      setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
-    } else if (matches.length === 0) {
-      setMatches([{ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" }]);
-    }
+    const count = tier === "single" ? 1 : tier === "combo" ? 2 : (tierMap[tier as keyof typeof tierMap] || 1);
+    setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
   };
 
   const validate = () => {
     if (!global.match_date) return 'Date required';
-    if (matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime)) return 'All matches must have Team A, Team B, League and Match Time';
+    if (matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
+    const useImages = !['single','combo'].includes(global.tier);
+    if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3) return 'Upload at least one prediction image for this tier';
     return '';
   };
 
@@ -336,6 +345,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
+        prediction_image_1: images.prediction_image_1 || null,
+        prediction_image_2: images.prediction_image_2 || null,
+        prediction_image_3: images.prediction_image_3 || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) return toast.error(insertError.message);
@@ -359,6 +371,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
+        prediction_image_1: images.prediction_image_1 || null,
+        prediction_image_2: images.prediction_image_2 || null,
+        prediction_image_3: images.prediction_image_3 || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) {
@@ -399,7 +414,7 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['single', 'combo', 'five', 'seven', 'ten'] as const).map(t => (
+                  {(['single', 'combo', 'five', 'seven', 'ten', 'premium'] as const).map(t => (
                     <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>
                   ))}
                 </SelectContent>
@@ -443,12 +458,25 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
               onUpdate={updates => updateMatch(index, updates)}
             />
           ))}
-          {global.tier === "combo" && (
-            <Button variant="outline" onClick={() => setMatches(m => [...m, { matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" }])}>
-              Add Match
-            </Button>
-          )}
+          
         </div>
+        {!(["single", "combo"] as const).includes(global.tier as "single"|"combo") && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <Label>Prediction Image URL 1</Label>
+              <Input value={images.prediction_image_1} onChange={e => setImages(i => ({ ...i, prediction_image_1: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Prediction Image URL 2</Label>
+              <Input value={images.prediction_image_2} onChange={e => setImages(i => ({ ...i, prediction_image_2: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Prediction Image URL 3</Label>
+              <Input value={images.prediction_image_3} onChange={e => setImages(i => ({ ...i, prediction_image_3: e.target.value }))} />
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <Label>SportyBet Code</Label>
