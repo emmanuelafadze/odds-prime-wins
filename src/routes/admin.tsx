@@ -189,7 +189,7 @@ function Admin() {
                     <tr key={p.id} className="border-b">
                       <td className="px-4 py-2">{p.match_date}</td>
                       <td>{p.home_team} vs {p.away_team}</td>
-                      <td>{p.prediction}</td>
+                      <td>{getDisplayPrediction(p.prediction)}</td>
                       <td className="capitalize">{p.tier}</td>
                       <td>{p.odds ?? "-"}</td>
                       <td className="capitalize">{p.status}</td>
@@ -243,6 +243,23 @@ function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: st
 }
 
 interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost"; }
+
+function getDisplayPrediction(prediction: string) {
+  const raw = (prediction || "").trim();
+  if (!raw) return "-";
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.tip === "string" && parsed.tip.trim()) return parsed.tip;
+    if (typeof parsed?.prediction === "string" && parsed.prediction.trim()) return parsed.prediction;
+    if (typeof parsed?.selection === "string" && parsed.selection.trim()) return parsed.selection;
+    if (Array.isArray(parsed?.matches) && parsed.matches.length > 0) return `${parsed.matches.length}-Match Combo`;
+  } catch {
+    return raw;
+  }
+
+  return raw;
+}
 
 const tierMap = {
   single: 1,
