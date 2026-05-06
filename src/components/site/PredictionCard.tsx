@@ -58,6 +58,9 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
 
     return "Combo matches listed below";
   })();
+  const cardTitle = p.tier === "combo"
+    ? `${comboMatches.length || "Multi"}-Match Combo Ticket`
+    : `${p.home_team} vs ${p.away_team}`;
   return (
     <Card className="overflow-hidden p-5 transition hover:shadow-[var(--shadow-elegant)]">
       <div className="flex items-center justify-between">
@@ -68,7 +71,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {p.match_date}</span>
         {p.kickoff && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {p.kickoff.slice(0,5)}</span>}
       </div>
-      <h3 className="mt-3 text-lg font-bold">{p.home_team} <span className="text-muted-foreground">vs</span> {p.away_team}</h3>
+      <h3 className="mt-3 text-lg font-bold">{cardTitle}</h3>
       {p.tier === "combo" && comboMatches.length > 0 && (
         <div className="mt-3 space-y-2">
           {comboMatches.map((m) => {
@@ -81,7 +84,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
                 </div>
                 <div className="text-muted-foreground">{m.matchTime}</div>
                 <div>{m.home_team} <span className="text-muted-foreground">vs</span> {m.away_team}</div>
-                {m.prediction && <div className="text-primary font-semibold">Tip: {m.prediction}</div>}
+                {!isLocked && m.prediction && <div className="text-primary font-semibold">Tip: {m.prediction}</div>}
               </div>
             );
           })}
