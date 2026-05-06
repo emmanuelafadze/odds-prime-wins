@@ -299,6 +299,7 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
+  const [imageFiles, setImageFiles] = useState<{ prediction_image_1?: File; prediction_image_2?: File; prediction_image_3?: File }>({});
   const initialTier = initial.tier || "single";
   const initialCount = initialTier === "single" ? 1 : initialTier === "combo" ? 2 : (tierMap[initialTier as keyof typeof tierMap] || 1);
   const [matches, setMatches] = useState<MatchType[]>(() => {
@@ -320,13 +321,35 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
     if (!global.match_date) return 'Date required';
     if (matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
     const useImages = !['single','combo'].includes(global.tier);
-    if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3) return 'Upload at least one prediction image for this tier';
+    if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3 && !imageFiles.prediction_image_1 && !imageFiles.prediction_image_2 && !imageFiles.prediction_image_3) return 'Upload at least one prediction image for this tier';
     return '';
+  };
+
+
+  const uploadImageIfNeeded = async (field: "prediction_image_1" | "prediction_image_2" | "prediction_image_3") => {
+    const file = imageFiles[field];
+    if (!file) return images[field];
+    const ext = file.name.split(".").pop() || "jpg";
+    const filePath = `predictions/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("prediction-images").upload(filePath, file, { upsert: false });
+    if (error) throw new Error(error.message);
+    return filePath;
   };
 
   const save = async () => {
     const error = validate();
     if (error) return toast.error(error);
+
+    let uploadedImages = { ...images };
+    try {
+      uploadedImages = {
+        prediction_image_1: await uploadImageIfNeeded("prediction_image_1") || "",
+        prediction_image_2: await uploadImageIfNeeded("prediction_image_2") || "",
+        prediction_image_3: await uploadImageIfNeeded("prediction_image_3") || "",
+      };
+    } catch (e: any) {
+      return toast.error(`Image upload failed: ${e.message}`);
+    }
 
     if (global.tier === "combo") {
       const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => m.status === "won") ? "won" : "pending";
@@ -345,9 +368,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
-        prediction_image_1: images.prediction_image_1 || null,
-        prediction_image_2: images.prediction_image_2 || null,
-        prediction_image_3: images.prediction_image_3 || null,
+        prediction_image_1: uploadedImages.prediction_image_1 || null,
+        prediction_image_2: uploadedImages.prediction_image_2 || null,
+        prediction_image_3: uploadedImages.prediction_image_3 || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) return toast.error(insertError.message);
@@ -371,9 +394,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
-        prediction_image_1: images.prediction_image_1 || null,
-        prediction_image_2: images.prediction_image_2 || null,
-        prediction_image_3: images.prediction_image_3 || null,
+        prediction_image_1: uploadedImages.prediction_image_1 || null,
+        prediction_image_2: uploadedImages.prediction_image_2 || null,
+        prediction_image_3: uploadedImages.prediction_image_3 || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) {
@@ -463,16 +486,16 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         {!(["single", "combo"] as const).includes(global.tier as "single"|"combo") && (
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <div>
-              <Label>Prediction Image URL 1</Label>
-              <Input value={images.prediction_image_1} onChange={e => setImages(i => ({ ...i, prediction_image_1: e.target.value }))} />
+              <Label>Upload Prediction Image 1</Label>
+              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_1: e.target.files?.[0] }))} />
             </div>
             <div>
-              <Label>Prediction Image URL 2</Label>
-              <Input value={images.prediction_image_2} onChange={e => setImages(i => ({ ...i, prediction_image_2: e.target.value }))} />
+              <Label>Upload Prediction Image 2</Label>
+              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_2: e.target.files?.[0] }))} />
             </div>
             <div>
-              <Label>Prediction Image URL 3</Label>
-              <Input value={images.prediction_image_3} onChange={e => setImages(i => ({ ...i, prediction_image_3: e.target.value }))} />
+              <Label>Upload Prediction Image 3</Label>
+              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_3: e.target.files?.[0] }))} />
             </div>
           </div>
         )}
