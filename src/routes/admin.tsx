@@ -319,7 +319,8 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
 
   const validate = () => {
     if (!global.match_date) return 'Date required';
-    if (matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
+    const needsMatchDetails = ['single','combo'].includes(global.tier);
+    if (needsMatchDetails && matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
     const useImages = !['single','combo'].includes(global.tier);
     if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3 && !imageFiles.prediction_image_1 && !imageFiles.prediction_image_2 && !imageFiles.prediction_image_3) return 'Upload at least one prediction image for this tier';
     return '';
@@ -349,6 +350,33 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
       };
     } catch (e: any) {
       return toast.error(`Image upload failed: ${e.message}`);
+    }
+
+    if (!["single", "combo"].includes(global.tier)) {
+      const payload = {
+        match_date: global.match_date,
+        kickoff: null,
+        league: global.league || "Image Ticket",
+        home_team: global.league || "Image",
+        away_team: "Ticket",
+        prediction: "IMAGE_TICKET",
+        odds: null,
+        tier: global.tier,
+        status: global.status,
+        published: global.published,
+        is_locked: global.is_locked,
+        sportybet_code: codes.sportybet_code || null,
+        betway_code: codes.betway_code || null,
+        mybet_code: codes.mybet_code || null,
+        prediction_image_1: uploadedImages.prediction_image_1 || null,
+        prediction_image_2: uploadedImages.prediction_image_2 || null,
+        prediction_image_3: uploadedImages.prediction_image_3 || null,
+      };
+      const { error: insertError } = await supabase.from("predictions").insert(payload);
+      if (insertError) return toast.error(insertError.message);
+      toast.success("Image ticket saved!");
+      onClose();
+      return;
     }
 
     if (global.tier === "combo") {
@@ -472,17 +500,18 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         </div>
 
         {/* Dynamic Match Blocks */}
-        <div className="space-y-4">
-          {matches.map((match, index) => (
-            <MatchBlock 
-              key={match.matchId}
-              index={index}
-              match={match}
-              onUpdate={updates => updateMatch(index, updates)}
-            />
-          ))}
-          
-        </div>
+        {["single", "combo"].includes(global.tier) && (
+          <div className="space-y-4">
+            {matches.map((match, index) => (
+              <MatchBlock 
+                key={match.matchId}
+                index={index}
+                match={match}
+                onUpdate={updates => updateMatch(index, updates)}
+              />
+            ))}
+          </div>
+        )}
         {!(["single", "combo"] as const).includes(global.tier as "single"|"combo") && (
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <div>
