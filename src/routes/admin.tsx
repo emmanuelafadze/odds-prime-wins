@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
 const TIERS = ["free","single","combo","five","ten","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
-interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; }
+interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
 interface Purchase { id:string; user_id:string; tier:string; amount_ghs:number; created_at:string; }
 
 function Admin() {
@@ -84,7 +84,7 @@ function Admin() {
       match_date: p.match_date, kickoff: p.kickoff || null, league: p.league || null,
       home_team: p.home_team, away_team: p.away_team, prediction: p.prediction,
       odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
-      status: p.status || "pending", published: p.published ?? true,
+      status: p.status || "pending", published: p.published ?? true, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
     if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
@@ -285,6 +285,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 
 function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true });
+  const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [matches, setMatches] = useState<MatchType[]>(initial.home_team ? [{ matchId: crypto.randomUUID(), home_team: initial.home_team, away_team: initial.away_team || '', league: initial.league || '', matchTime: initial.kickoff || '', odds: initial.odds, prediction: initial.prediction || '', status: (initial.status as MatchType["status"]) || "pending" }] : [{ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" }]);
   
   const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates }));
@@ -323,6 +324,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         tier: global.tier,
         status: comboStatus,
         published: global.published,
+        sportybet_code: codes.sportybet_code || null,
+        betway_code: codes.betway_code || null,
+        mybet_code: codes.mybet_code || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) return toast.error(insertError.message);
@@ -342,6 +346,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         tier: global.tier,
         status: match.status || global.status,
         published: global.published,
+        sportybet_code: codes.sportybet_code || null,
+        betway_code: codes.betway_code || null,
+        mybet_code: codes.mybet_code || null,
       };
       const { error: insertError } = await supabase.from('predictions').insert(payload);
       if (insertError) {
@@ -419,6 +426,20 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
               Add Match
             </Button>
           )}
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label>SportyBet Code</Label>
+            <Input value={codes.sportybet_code} onChange={e => setCodes(c => ({ ...c, sportybet_code: e.target.value }))} />
+          </div>
+          <div>
+            <Label>Betway Code</Label>
+            <Input value={codes.betway_code} onChange={e => setCodes(c => ({ ...c, betway_code: e.target.value }))} />
+          </div>
+          <div>
+            <Label>MyBet Code</Label>
+            <Input value={codes.mybet_code} onChange={e => setCodes(c => ({ ...c, mybet_code: e.target.value }))} />
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">

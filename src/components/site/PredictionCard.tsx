@@ -1,11 +1,22 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
+import { useState } from "react";
 
 export interface Prediction {
   id: string; match_date: string; kickoff?: string | null; league?: string | null;
   home_team: string; away_team: string; prediction: string;
-  odds?: number | null; tier: string; status: string;
+  odds?: number | null; tier: string; status: string; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null;
+}
+
+interface ComboMatch {
+  matchId: string;
+  home_team: string;
+  away_team: string;
+  league: string;
+  matchTime: string;
+  odds?: number;
+  status: "pending" | "won" | "lost";
 }
 
 interface ComboMatch {
@@ -19,6 +30,7 @@ interface ComboMatch {
 }
 
 export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
+  const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
   const isLocked = p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending");
@@ -29,6 +41,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
       comboMatches = Array.isArray(parsed.matches) ? parsed.matches : [];
     } catch {}
   }
+  const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
   return (
     <Card className="overflow-hidden p-5 transition hover:shadow-[var(--shadow-elegant)]">
       <div className="flex items-center justify-between">
@@ -68,6 +81,23 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
         )}
       </div>
 {!isLocked && p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
+      <div className="mt-3 space-y-2">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setBookmaker("sportybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "sportybet" ? "border-[#E0002B] bg-[#E0002B] text-white" : "border-border"}`}>
+            <span className="mr-1 inline-block rounded bg-white px-1 text-[#E0002B]">S</span>SportyBet
+          </button>
+          <button type="button" onClick={() => setBookmaker("betway")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "betway" ? "border-[#00A651] bg-[#00A651] text-white" : "border-border"}`}>
+            <span className="mr-1 inline-block rounded bg-black px-1 text-[#00A651]">B</span>Betway
+          </button>
+          <button type="button" onClick={() => setBookmaker("mybet")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${bookmaker === "mybet" ? "border-[#1D4ED8] bg-[#1D4ED8] text-white" : "border-border"}`}>
+            <span className="mr-1 inline-block rounded bg-white px-1 text-[#1D4ED8]">M</span>MyBet
+          </button>
+        </div>
+        <div className="rounded-md border p-2 text-sm">
+          <span className="text-muted-foreground">Bet Code: </span>
+          <span className="font-semibold">{bookmakerCode || "No code available"}</span>
+        </div>
+      </div>
     </Card>
   );
 }
