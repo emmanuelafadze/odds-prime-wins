@@ -6,7 +6,7 @@ import { useState } from "react";
 export interface Prediction {
   id: string; match_date: string; kickoff?: string | null; league?: string | null;
   home_team: string; away_team: string; prediction: string;
-  odds?: number | null; tier: string; status: string; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null;
+  odds?: number | null; tier: string; status: string; is_locked?: boolean | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null;
 }
 
 interface ComboMatch {
@@ -33,7 +33,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
-  const isLocked = p.tier === "free" ? false : p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending");
+  const isLocked = p.tier === "free" ? false : Boolean(p.is_locked) || (p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending"));
   let comboMatches: ComboMatch[] = [];
   if (p.tier === "combo") {
     try {
