@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity, Lock, Unlock } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -73,11 +73,13 @@ function Admin() {
     return () => { void supabase.removeChannel(channel); };
   }, [role, load]);
 
+  const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
+
   if (loading || role !== "admin") return <SiteLayout><div className="container mx-auto px-4 py-20"><Skeleton className="h-40"/></div></SiteLayout>;
 
   // --- Stats ---
-  const totalRevenue = (purchases??[]).reduce((s,p)=>s+Number(p.amount_ghs),0);
-  const uniqueCustomers = new Set((purchases??[]).map(p=>p.user_id)).size;
+  const totalRevenue = (purchases??[]).reduce((s,p)=>s+Number(p.amount_ghs ?? 0),0);
+  const uniqueCustomers = new Set((purchases??[]).map(p=>p.user_id).filter(Boolean)).size;
   const wonCount = (preds??[]).filter(p=>p.status==="won").length;
   const totalPreds = (preds??[]).length;
   const winRate = totalPreds ? Math.round((wonCount/totalPreds)*100) : 0;
@@ -98,7 +100,7 @@ function Admin() {
   const days = Array.from({length:7}).map((_,i)=>{
     const d = new Date(); d.setDate(d.getDate()-(6-i));
     const key = d.toISOString().slice(0,10);
-    const total = (purchases??[]).filter(p=>p.created_at.slice(0,10)===key).reduce((s,p)=>s+Number(p.amount_ghs),0);
+    const total = (purchases??[]).filter(p=>(p.created_at || "").slice(0,10)===key).reduce((s,p)=>s+Number(p.amount_ghs ?? 0),0);
     return { day: d.toLocaleDateString(undefined,{weekday:"short"}), revenue: total };
   });
 
@@ -109,7 +111,6 @@ function Admin() {
       odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
       status: p.status || "pending", published: p.published ?? true, is_locked: p.is_locked ?? false, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
-    if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
       ? await supabase.from("predictions").update(payload).eq("id", p.id).select("id").single()
       : await supabase.from("predictions").insert(payload);
@@ -134,13 +135,6 @@ function Admin() {
     await supabase.from("predictions").update({ published: !p.published }).eq("id", p.id);
     void load();
   };
-
-  const toggleLock = async (p: Pred) => {
-    await supabase.from("predictions").update({ is_locked: !p.is_locked }).eq("id", p.id);
-    toast.success(!p.is_locked ? "Ticket locked" : "Ticket unlocked");
-    void load();
-  };
-  const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
 
   return (
     <SiteLayout>
@@ -230,13 +224,12 @@ function Admin() {
                       <td>{p.is_locked ? "🔒" : "🔓"}</td>
                       <td className="space-x-1 px-2 py-2">
                         <Button size="icon" variant="ghost" onClick={()=>togglePub(p)} title="Toggle publish">{p.published?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</Button>
-                        <Button size="icon" variant="ghost" onClick={()=>toggleLock(p)} title={p.is_locked ? "Unlock ticket" : "Lock ticket"}>{p.is_locked?<Unlock className="h-4 w-4"/>:<Lock className="h-4 w-4"/>}</Button>
-                        <Button size="icon" variant="ghost" onClick={()=>setEditing(p)}><Edit className="h-4 w-4"/></Button>
+                                                <Button size="icon" variant="ghost" onClick={()=>setEditing(p)}><Edit className="h-4 w-4"/></Button>
                         <Button size="icon" variant="ghost" onClick={()=>remove(p.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                       </td>
                     </tr>
                   ))}
-                  {renderedPreds.length===0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">{isRefreshing ? "Refreshing..." : "No predictions yet."}</td></tr>}
+                  {renderedPreds.length===0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{isRefreshing ? "Refreshing..." : "No predictions yet."}</td></tr>}
                 </tbody>
               </table>
             </Card>
@@ -247,7 +240,7 @@ function Admin() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left"><tr><th className="px-4 py-3">Date</th><th>User</th><th>Tier</th><th>Amount</th></tr></thead>
                 <tbody>
-                  {(purchases??[]).map(p=>(<tr key={p.id} className="border-b"><td className="px-4 py-2">{new Date(p.created_at).toLocaleString()}</td><td className="font-mono text-xs">{p.user_id.slice(0,8)}…</td><td className="capitalize">{p.tier}</td><td>GHS {Number(p.amount_ghs).toFixed(2)}</td></tr>))}
+                  {(purchases??[]).map(p=>(<tr key={p.id} className="border-b"><td className="px-4 py-2">{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td><td className="font-mono text-xs">{p.user_id ? `${p.user_id.slice(0,8)}…` : "-"}</td><td className="capitalize">{p.tier || "-"}</td><td>GHS {Number(p.amount_ghs ?? 0).toFixed(2)}</td></tr>))}
                   {(purchases??[]).length===0 && <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No purchases yet.</td></tr>}
                 </tbody>
               </table>
@@ -275,7 +268,7 @@ function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: st
   );
 }
 
-interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost"; }
+interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost" | "void"; }
 
 function getDisplayPrediction(prediction: string) {
   const raw = (prediction || "").trim();
@@ -336,7 +329,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
           <Select value={match.status} onValueChange={v => onUpdate({ status: v as MatchType["status"] })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {["pending", "won", "lost"].map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
+              {["pending", "won", "lost", "void"].map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -346,7 +339,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 }
 
 function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
-  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false, manualLockOverride: false });
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
   const [imageFiles, setImageFiles] = useState<{ prediction_image_1?: File; prediction_image_2?: File; prediction_image_3?: File }>({});
@@ -357,16 +350,8 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     while (base.length < initialCount) base.push({ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" });
     return base.slice(0, initialCount);
   });
-  
-  const resolveLock = (status: string, manualOverride: boolean, manualLocked: boolean) => {
-    if (manualOverride) return manualLocked;
-    return status === "pending";
-  };
-  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => {
-    const next = { ...g, ...updates };
-    next.is_locked = resolveLock(next.status, next.manualLockOverride, next.is_locked);
-    return next;
-  });
+
+  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates, is_locked: ((updates.status ?? g.status) === "pending") }));
   const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
   
   const handleTierChange = (tier: string) => {
@@ -374,16 +359,6 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     const count = tier === "single" ? 1 : tier === "combo" ? 2 : (tierMap[tier as keyof typeof tierMap] || 1);
     setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
   };
-
-  const validate = () => {
-    if (!global.match_date) return 'Date required';
-    const needsMatchDetails = ['single','combo'].includes(global.tier);
-    if (needsMatchDetails && matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
-    const useImages = !['single','combo'].includes(global.tier);
-    if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3 && !imageFiles.prediction_image_1 && !imageFiles.prediction_image_2 && !imageFiles.prediction_image_3) return 'Upload at least one prediction image for this tier';
-    return '';
-  };
-
 
   const uploadImageIfNeeded = async (field: "prediction_image_1" | "prediction_image_2" | "prediction_image_3") => {
     const file = imageFiles[field];
@@ -396,9 +371,6 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
   };
 
   const save = async () => {
-    const error = validate();
-    if (error) return toast.error(error);
-
     let uploadedImages = { ...images };
     try {
       uploadedImages = {
@@ -423,7 +395,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: global.status,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -436,7 +408,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     }
 
     if (global.tier === "combo") {
-      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => m.status === "won") ? "won" : "pending";
+      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => ["won", "void"].includes(m.status)) ? "won" : "pending";
       const payload: Partial<Pred> = {
         id: initial.id,
         match_date: global.match_date,
@@ -449,7 +421,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: comboStatus,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: comboStatus === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -472,7 +444,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: match.status || global.status,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -537,23 +509,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Ticket Access</Label>
-              <Select value={global.is_locked ? "locked" : "unlocked"} onValueChange={v => updateGlobal({ is_locked: v === "locked" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unlocked">UNLOCKED</SelectItem>
-                  <SelectItem value="locked">LOCKED</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Manual Lock Override</Label>
-              <Select value={global.manualLockOverride ? "on" : "off"} onValueChange={v => updateGlobal({ manualLockOverride: v === "on" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="off">OFF</SelectItem>
-                  <SelectItem value="on">ON</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input value={global.status === "pending" ? "LOCKED (AUTO)" : "OPEN (AUTO)"} disabled />
             </div>
           </div>
         </div>
