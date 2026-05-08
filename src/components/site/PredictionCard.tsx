@@ -17,14 +17,13 @@ interface ComboMatch {
   matchTime: string;
   prediction?: string;
   odds?: number;
-  status: "pending" | "won" | "lost";
+  status: "pending" | "won" | "lost" | "void";
 }
 
 export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
-  const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
-  const isLocked = p.tier === "free" ? false : Boolean(p.is_locked) || (p.tier === "combo" ? (status === "pending" && locked) : (locked || status === "pending"));
+  const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : status === "void" ? "bg-blue-500/15 text-blue-600" : "bg-muted text-muted-foreground";
   let comboMatches: ComboMatch[] = [];
   if (p.tier === "combo") {
     try {
@@ -33,6 +32,13 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
     } catch {}
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
+  const comboHasPendingMatch = comboMatches.some((m) => (m.status || "pending") === "pending");
+  const isLocked = p.tier === "free"
+    ? false
+    : p.tier === "combo"
+      ? (locked || comboHasPendingMatch || status === "pending")
+      : (locked || status === "pending" || Boolean(p.is_locked));
+
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
 
@@ -75,7 +81,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
       {p.tier === "combo" && comboMatches.length > 0 && (
         <div className="mt-3 space-y-2">
           {comboMatches.map((m) => {
-            const mStatusColor = m.status === "won" ? "bg-green-500/15 text-green-600" : m.status === "lost" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
+            const mStatusColor = m.status === "won" ? "bg-green-500/15 text-green-600" : m.status === "lost" ? "bg-destructive/15 text-destructive" : m.status === "void" ? "bg-blue-500/15 text-blue-600" : "bg-muted text-muted-foreground";
             return (
               <div key={m.matchId} className="rounded-md border p-2 text-sm">
                 <div className="flex items-center justify-between">

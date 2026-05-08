@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity, Lock, Unlock } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff, Plus, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -135,11 +135,6 @@ function Admin() {
     void load();
   };
 
-  const toggleLock = async (p: Pred) => {
-    await supabase.from("predictions").update({ is_locked: !p.is_locked }).eq("id", p.id);
-    toast.success(!p.is_locked ? "Ticket locked" : "Ticket unlocked");
-    void load();
-  };
   const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
 
   return (
@@ -230,13 +225,12 @@ function Admin() {
                       <td>{p.is_locked ? "🔒" : "🔓"}</td>
                       <td className="space-x-1 px-2 py-2">
                         <Button size="icon" variant="ghost" onClick={()=>togglePub(p)} title="Toggle publish">{p.published?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</Button>
-                        <Button size="icon" variant="ghost" onClick={()=>toggleLock(p)} title={p.is_locked ? "Unlock ticket" : "Lock ticket"}>{p.is_locked?<Unlock className="h-4 w-4"/>:<Lock className="h-4 w-4"/>}</Button>
-                        <Button size="icon" variant="ghost" onClick={()=>setEditing(p)}><Edit className="h-4 w-4"/></Button>
+                                                <Button size="icon" variant="ghost" onClick={()=>setEditing(p)}><Edit className="h-4 w-4"/></Button>
                         <Button size="icon" variant="ghost" onClick={()=>remove(p.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                       </td>
                     </tr>
                   ))}
-                  {renderedPreds.length===0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">{isRefreshing ? "Refreshing..." : "No predictions yet."}</td></tr>}
+                  {renderedPreds.length===0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{isRefreshing ? "Refreshing..." : "No predictions yet."}</td></tr>}
                 </tbody>
               </table>
             </Card>
@@ -275,7 +269,7 @@ function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: st
   );
 }
 
-interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost"; }
+interface MatchType { matchId: string; home_team: string; away_team: string; league: string; matchTime: string; odds?: number; prediction: string; status: "pending" | "won" | "lost" | "void"; }
 
 function getDisplayPrediction(prediction: string) {
   const raw = (prediction || "").trim();
@@ -336,7 +330,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
           <Select value={match.status} onValueChange={v => onUpdate({ status: v as MatchType["status"] })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {["pending", "won", "lost"].map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
+              {["pending", "won", "lost", "void"].map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -346,7 +340,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 }
 
 function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
-  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false, manualLockOverride: false });
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
   const [imageFiles, setImageFiles] = useState<{ prediction_image_1?: File; prediction_image_2?: File; prediction_image_3?: File }>({});
@@ -357,16 +351,8 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     while (base.length < initialCount) base.push({ matchId: crypto.randomUUID(), home_team: "", away_team: "", league: "", matchTime: "", prediction: "", status: "pending" });
     return base.slice(0, initialCount);
   });
-  
-  const resolveLock = (status: string, manualOverride: boolean, manualLocked: boolean) => {
-    if (manualOverride) return manualLocked;
-    return status === "pending";
-  };
-  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => {
-    const next = { ...g, ...updates };
-    next.is_locked = resolveLock(next.status, next.manualLockOverride, next.is_locked);
-    return next;
-  });
+
+  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates, is_locked: ((updates.status ?? g.status) === "pending") }));
   const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
   
   const handleTierChange = (tier: string) => {
@@ -423,7 +409,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: global.status,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -436,7 +422,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     }
 
     if (global.tier === "combo") {
-      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => m.status === "won") ? "won" : "pending";
+      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => ["won", "void"].includes(m.status)) ? "won" : "pending";
       const payload: Partial<Pred> = {
         id: initial.id,
         match_date: global.match_date,
@@ -449,7 +435,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: comboStatus,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: comboStatus === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -472,7 +458,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: match.status || global.status,
         published: global.published,
-        is_locked: global.is_locked,
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
@@ -537,23 +523,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Ticket Access</Label>
-              <Select value={global.is_locked ? "locked" : "unlocked"} onValueChange={v => updateGlobal({ is_locked: v === "locked" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unlocked">UNLOCKED</SelectItem>
-                  <SelectItem value="locked">LOCKED</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Manual Lock Override</Label>
-              <Select value={global.manualLockOverride ? "on" : "off"} onValueChange={v => updateGlobal({ manualLockOverride: v === "on" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="off">OFF</SelectItem>
-                  <SelectItem value="on">ON</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input value={global.status === "pending" ? "LOCKED (AUTO)" : "OPEN (AUTO)"} disabled />
             </div>
           </div>
         </div>
