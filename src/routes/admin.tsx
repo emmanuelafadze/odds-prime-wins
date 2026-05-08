@@ -76,8 +76,8 @@ function Admin() {
   if (loading || role !== "admin") return <SiteLayout><div className="container mx-auto px-4 py-20"><Skeleton className="h-40"/></div></SiteLayout>;
 
   // --- Stats ---
-  const totalRevenue = (purchases??[]).reduce((s,p)=>s+Number(p.amount_ghs),0);
-  const uniqueCustomers = new Set((purchases??[]).map(p=>p.user_id)).size;
+  const totalRevenue = (purchases??[]).reduce((s,p)=>s+Number(p.amount_ghs ?? 0),0);
+  const uniqueCustomers = new Set((purchases??[]).map(p=>p.user_id).filter(Boolean)).size;
   const wonCount = (preds??[]).filter(p=>p.status==="won").length;
   const totalPreds = (preds??[]).length;
   const winRate = totalPreds ? Math.round((wonCount/totalPreds)*100) : 0;
@@ -98,7 +98,7 @@ function Admin() {
   const days = Array.from({length:7}).map((_,i)=>{
     const d = new Date(); d.setDate(d.getDate()-(6-i));
     const key = d.toISOString().slice(0,10);
-    const total = (purchases??[]).filter(p=>p.created_at.slice(0,10)===key).reduce((s,p)=>s+Number(p.amount_ghs),0);
+    const total = (purchases??[]).filter(p=>(p.created_at || "").slice(0,10)===key).reduce((s,p)=>s+Number(p.amount_ghs ?? 0),0);
     return { day: d.toLocaleDateString(undefined,{weekday:"short"}), revenue: total };
   });
 
@@ -241,7 +241,7 @@ function Admin() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left"><tr><th className="px-4 py-3">Date</th><th>User</th><th>Tier</th><th>Amount</th></tr></thead>
                 <tbody>
-                  {(purchases??[]).map(p=>(<tr key={p.id} className="border-b"><td className="px-4 py-2">{new Date(p.created_at).toLocaleString()}</td><td className="font-mono text-xs">{p.user_id.slice(0,8)}…</td><td className="capitalize">{p.tier}</td><td>GHS {Number(p.amount_ghs).toFixed(2)}</td></tr>))}
+                  {(purchases??[]).map(p=>(<tr key={p.id} className="border-b"><td className="px-4 py-2">{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td><td className="font-mono text-xs">{p.user_id ? `${p.user_id.slice(0,8)}…` : "-"}</td><td className="capitalize">{p.tier || "-"}</td><td>GHS {Number(p.amount_ghs ?? 0).toFixed(2)}</td></tr>))}
                   {(purchases??[]).length===0 && <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No purchases yet.</td></tr>}
                 </tbody>
               </table>
