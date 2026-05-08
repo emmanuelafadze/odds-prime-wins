@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,20 +35,43 @@ function Admin() {
   const [preds, setPreds] = useState<Pred[]|null>(null);
   const [purchases, setPurchases] = useState<Purchase[]|null>(null);
   const [editing, setEditing] = useState<Partial<Pred>|null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const deletedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) nav({ to: "/dashboard" });
   }, [loading, user, role, nav]);
 
-  const load = async () => {
+  const normalizePredictions = useCallback((rows: Pred[]) => {
+    const next = new Map<string, Pred>();
+    for (const row of rows) {
+      if (!row?.id || deletedIdsRef.current.has(row.id)) continue;
+      next.set(row.id, row);
+    }
+    return Array.from(next.values());
+  }, []);
+
+  const load = useCallback(async () => {
+    setIsRefreshing(true);
     const [{ data: pData }, { data: pur }] = await Promise.all([
       supabase.from("predictions").select("*").order("match_date",{ascending:false}),
       supabase.from("purchases").select("*").order("created_at",{ascending:false}),
     ]);
-    setPreds((pData as Pred[]) ?? []);
+    setPreds(normalizePredictions((pData as Pred[]) ?? []));
     setPurchases((pur as Purchase[]) ?? []);
-  };
-  useEffect(() => { if (role==="admin") load(); }, [role]);
+    setIsRefreshing(false);
+  }, [normalizePredictions]);
+  useEffect(() => { if (role==="admin") void load(); }, [role, load]);
+
+  useEffect(() => {
+    if (role !== "admin") return;
+    const channel = supabase.channel("admin-predictions-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "predictions" }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [role, load]);
 
   if (loading || role !== "admin") return <SiteLayout><div className="container mx-auto px-4 py-20"><Skeleton className="h-40"/></div></SiteLayout>;
 
@@ -88,26 +111,36 @@ function Admin() {
     };
     if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
-      ? await supabase.from("predictions").update(payload).eq("id", p.id)
+      ? await supabase.from("predictions").update(payload).eq("id", p.id).select("id").single()
       : await supabase.from("predictions").insert(payload);
     if (error) return toast.error(error.message);
-    toast.success("Saved"); setEditing(null); load();
+    toast.success("Saved"); setEditing(null); void load();
   };
   const remove = async (id: string) => {
     if (!confirm("Delete this prediction?")) return;
+    deletedIdsRef.current.add(id);
+    setPreds(prev => (prev ?? []).filter(p => p.id !== id));
     const { error } = await supabase.from("predictions").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
+    if (error) {
+      deletedIdsRef.current.delete(id);
+      toast.error(error.message);
+      void load();
+      return;
+    }
+    toast.success("Deleted");
+    void load();
   };
   const togglePub = async (p: Pred) => {
     await supabase.from("predictions").update({ published: !p.published }).eq("id", p.id);
-    load();
+    void load();
   };
 
   const toggleLock = async (p: Pred) => {
     await supabase.from("predictions").update({ is_locked: !p.is_locked }).eq("id", p.id);
     toast.success(!p.is_locked ? "Ticket locked" : "Ticket unlocked");
-    load();
+    void load();
   };
+  const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
 
   return (
     <SiteLayout>
@@ -185,7 +218,7 @@ function Admin() {
                   <th className="px-4 py-3">Date</th><th>Match</th><th>Tip</th><th>Tier</th><th>Odds</th><th>Status</th><th>Pub</th><th>Lock</th><th></th>
                 </tr></thead>
                 <tbody>
-                  {(preds??[]).map(p=>(
+                  {renderedPreds.map(p=>(
                     <tr key={p.id} className="border-b">
                       <td className="px-4 py-2">{p.match_date}</td>
                       <td>{p.home_team} vs {p.away_team}</td>
@@ -203,7 +236,7 @@ function Admin() {
                       </td>
                     </tr>
                   ))}
-                  {(preds??[]).length===0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No predictions yet.</td></tr>}
+                  {renderedPreds.length===0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">{isRefreshing ? "Refreshing..." : "No predictions yet."}</td></tr>}
                 </tbody>
               </table>
             </Card>
@@ -312,8 +345,8 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
   );
 }
 
-function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () => void }) {
-  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false });
+function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: initial.is_locked ?? false, manualLockOverride: false });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
   const [imageFiles, setImageFiles] = useState<{ prediction_image_1?: File; prediction_image_2?: File; prediction_image_3?: File }>({});
@@ -325,7 +358,15 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
     return base.slice(0, initialCount);
   });
   
-  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => ({ ...g, ...updates }));
+  const resolveLock = (status: string, manualOverride: boolean, manualLocked: boolean) => {
+    if (manualOverride) return manualLocked;
+    return status === "pending";
+  };
+  const updateGlobal = (updates: Partial<typeof global>) => setGlobal(g => {
+    const next = { ...g, ...updates };
+    next.is_locked = resolveLock(next.status, next.manualLockOverride, next.is_locked);
+    return next;
+  });
   const updateMatch = (index: number, updates: Partial<MatchType>) => setMatches(m => m.map((match, i) => i === index ? { ...match, ...updates } : match));
   
   const handleTierChange = (tier: string) => {
@@ -370,7 +411,8 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
     }
 
     if (!["single", "combo"].includes(global.tier)) {
-      const payload = {
+      const payload: Partial<Pred> = {
+        id: initial.id,
         match_date: global.match_date,
         kickoff: null,
         league: global.league || "Image Ticket",
@@ -389,16 +431,14 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         prediction_image_2: uploadedImages.prediction_image_2 || null,
         prediction_image_3: uploadedImages.prediction_image_3 || null,
       };
-      const { error: insertError } = await supabase.from("predictions").insert(payload);
-      if (insertError) return toast.error(insertError.message);
-      toast.success("Image ticket saved!");
-      onClose();
+      await onSave(payload);
       return;
     }
 
     if (global.tier === "combo") {
       const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => m.status === "won") ? "won" : "pending";
-      const payload = {
+      const payload: Partial<Pred> = {
+        id: initial.id,
         match_date: global.match_date,
         kickoff: null,
         league: "Combo",
@@ -417,10 +457,7 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         prediction_image_2: uploadedImages.prediction_image_2 || null,
         prediction_image_3: uploadedImages.prediction_image_3 || null,
       };
-      const { error: insertError } = await supabase.from('predictions').insert(payload);
-      if (insertError) return toast.error(insertError.message);
-      toast.success("Combo saved!");
-      onClose();
+      await onSave(payload);
       return;
     }
     for (const match of matches) {
@@ -443,14 +480,9 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
         prediction_image_2: uploadedImages.prediction_image_2 || null,
         prediction_image_3: uploadedImages.prediction_image_3 || null,
       };
-      const { error: insertError } = await supabase.from('predictions').insert(payload);
-      if (insertError) {
-        toast.error(`Error saving match ${matches.indexOf(match) + 1}: ${insertError.message}`);
-        return;
-      }
+      await onSave({ id: initial.id, ...payload });
+      break;
     }
-    toast.success(`${matches.length} prediction(s) saved!`);
-    onClose();
   };
 
   return (
@@ -510,6 +542,16 @@ function EditDialog({ initial, onClose }: { initial: Partial<Pred>; onClose: () 
                 <SelectContent>
                   <SelectItem value="unlocked">UNLOCKED</SelectItem>
                   <SelectItem value="locked">LOCKED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Manual Lock Override</Label>
+              <Select value={global.manualLockOverride ? "on" : "off"} onValueChange={v => updateGlobal({ manualLockOverride: v === "on" })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="off">OFF</SelectItem>
+                  <SelectItem value="on">ON</SelectItem>
                 </SelectContent>
               </Select>
             </div>
