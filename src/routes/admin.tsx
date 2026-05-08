@@ -111,7 +111,6 @@ function Admin() {
       odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
       status: p.status || "pending", published: p.published ?? true, is_locked: p.is_locked ?? false, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
-    if (!payload.match_date || !payload.home_team || !payload.away_team || !payload.prediction) return toast.error("Missing required fields");
     const { error } = p.id
       ? await supabase.from("predictions").update(payload).eq("id", p.id).select("id").single()
       : await supabase.from("predictions").insert(payload);
@@ -361,16 +360,6 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
   };
 
-  const validate = () => {
-    if (!global.match_date) return 'Date required';
-    const needsMatchDetails = ['single','combo'].includes(global.tier);
-    if (needsMatchDetails && matches.some(m => !m.home_team || !m.away_team || !m.league || !m.matchTime || !m.prediction)) return 'All matches must have Team A, Team B, League, Match Time, and Tip/Prediction';
-    const useImages = !['single','combo'].includes(global.tier);
-    if (useImages && !images.prediction_image_1 && !images.prediction_image_2 && !images.prediction_image_3 && !imageFiles.prediction_image_1 && !imageFiles.prediction_image_2 && !imageFiles.prediction_image_3) return 'Upload at least one prediction image for this tier';
-    return '';
-  };
-
-
   const uploadImageIfNeeded = async (field: "prediction_image_1" | "prediction_image_2" | "prediction_image_3") => {
     const file = imageFiles[field];
     if (!file) return images[field];
@@ -382,9 +371,6 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
   };
 
   const save = async () => {
-    const error = validate();
-    if (error) return toast.error(error);
-
     let uploadedImages = { ...images };
     try {
       uploadedImages = {
