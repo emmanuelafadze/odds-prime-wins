@@ -73,6 +73,8 @@ function Admin() {
     return () => { void supabase.removeChannel(channel); };
   }, [role, load]);
 
+  const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
+
   if (loading || role !== "admin") return <SiteLayout><div className="container mx-auto px-4 py-20"><Skeleton className="h-40"/></div></SiteLayout>;
 
   // --- Stats ---
@@ -134,8 +136,6 @@ function Admin() {
     await supabase.from("predictions").update({ published: !p.published }).eq("id", p.id);
     void load();
   };
-
-  const renderedPreds = useMemo(() => normalizePredictions(preds ?? []), [preds, normalizePredictions]);
 
   return (
     <SiteLayout>
