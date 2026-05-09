@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-const TIERS = ["free","single","combo","fixed_draw","premium"] as const;
+const TIERS = ["single","combo","fixed_draw","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
 interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; is_locked?: boolean | null; prediction_image_1?: string | null; prediction_image_2?: string | null; prediction_image_3?: string | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
@@ -108,7 +108,7 @@ function Admin() {
     const payload: any = {
       match_date: p.match_date, kickoff: p.kickoff || null, league: p.league || null,
       home_team: p.home_team, away_team: p.away_team, prediction: p.prediction,
-      odds: p.odds ? Number(p.odds) : null, tier: p.tier || "free",
+      odds: p.odds ? Number(p.odds) : null, tier: p.tier || "single",
       status: p.status || "pending", published: p.published ?? true, is_locked: p.is_locked ?? false, sportybet_code: p.sportybet_code || null, betway_code: p.betway_code || null, mybet_code: p.mybet_code || null,
     };
     const { error } = p.id
@@ -141,7 +141,7 @@ function Admin() {
       <section className="container mx-auto px-4 py-12">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <Button onClick={()=>setEditing({ match_date: new Date().toISOString().slice(0,10), tier: "free", status: "pending", published: true })}><Plus className="mr-2 h-4 w-4"/>New Prediction</Button>
+          <Button onClick={()=>setEditing({ match_date: new Date().toISOString().slice(0,10), tier: "single", status: "pending", published: true })}><Plus className="mr-2 h-4 w-4"/>New Prediction</Button>
         </div>
 
         {/* KPI cards */}
@@ -337,7 +337,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 }
 
 function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
-  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
+  const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'single', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const initialTier = initial.tier || "single";
   const initialCount = initialTier === "single" ? 1 : initialTier === "combo" ? 2 : (tierMap[initialTier as keyof typeof tierMap] || 1);
