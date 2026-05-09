@@ -31,7 +31,7 @@ export function PredictionCard({
   p: Prediction;
   locked?: boolean;
   tierPrice?: number;
-  onUnlock?: (tier: string) => void;
+  onUnlock?: () => void;
   unlockLoading?: boolean;
 }) {
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
@@ -45,7 +45,7 @@ export function PredictionCard({
     } catch {}
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
-  const isLocked = p.tier === "free" ? false : locked;
+  const isLocked = locked;
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
@@ -121,8 +121,8 @@ export function PredictionCard({
             <p className="text-sm font-semibold">Unlock this prediction</p>
             <span className="text-base font-black text-primary">GH₵{(tierPrice ?? 0).toFixed(2)}</span>
           </div>
-          <Button className="mt-3 w-full" onClick={() => onUnlock?.(p.tier)} disabled={!onUnlock || !isLocked || unlockLoading}>
-            {isLocked ? (unlockLoading ? "Opening checkout..." : "Unlocked") : "Already unlocked"}
+          <Button className="mt-3 w-full" onClick={() => onUnlock?.()} disabled={!onUnlock || !isLocked || unlockLoading}>
+            {isLocked ? (unlockLoading ? "Opening checkout..." : "Pay Now") : "Already unlocked"}
           </Button>
         </div>
       )}
