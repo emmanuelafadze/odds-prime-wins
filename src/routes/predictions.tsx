@@ -8,6 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PRICING } from "@/lib/pricing";
+import { payWithPaystack } from "@/lib/paystack";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/predictions")({
   head: () => ({ meta: [{ title: "Premium Predictions — ODDSPrime" }, { name: "description", content: "Premium correct scores and accumulators in German cedis." }] }),
@@ -18,15 +22,63 @@ const TIERS = [
   { key: "free", label: "Free" },
   { key: "single", label: "Correct Score" },
   { key: "combo", label: "2-Score Combo" },
-  { key: "five", label: "5 Odds" },
-  { key: "ten", label: "10 Odds" },
+  { key: "fixed_draw", label: "Fixed Draw" },
   { key: "premium", label: "Premium" },
 ];
 
 function Pred() {
   const { user } = useAuth();
+  const nav = useNavigate();
   const [items, setItems] = useState<Prediction[] | null>(null);
   const [purchasedTiers, setPurchasedTiers] = useState<Set<string>>(new Set());
+  const [loadingTiers, setLoadingTiers] = useState<Set<string>>(new Set());
+
+  const tierPriceMap: Record<string, number> = {
+    single: PRICING.single.price,
+    combo: PRICING.combo.price,
+    fixed_draw: PRICING.fixed_draw.price,
+    premium: PRICING.premium.price,
+  };
+
+  const buyTier = async (tier: string) => {
+    if (!user) { nav({ to: "/login" }); return; }
+    if (loadingTiers.has(tier)) return;
+    const pricingEntry = Object.values(PRICING).find((entry) => entry.tier === tier);
+    if (!pricingEntry) return;
+    setLoadingTiers((prev) => new Set(prev).add(tier));
+    toast.message(`Opening Paystack checkout for GH₵${pricingEntry.price.toFixed(2)}`);
+    await payWithPaystack({
+      email: user.email!,
+      amountGhs: pricingEntry.price,
+      metadata: { tier: pricingEntry.tier, name: pricingEntry.name },
+      onSuccess: async (ref) => {
+        const today = new Date().toISOString().slice(0, 10);
+        const expiresAt = tier === "premium"
+          ? new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+          : new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+        const { error } = await supabase.from("purchases").insert({
+          user_id: user.id, tier: pricingEntry.tier, price: pricingEntry.price, amount_ghs: pricingEntry.price,
+          reference: ref, match_date: today, expires_at: expiresAt,
+        });
+        if (error) toast.error(`Purchase failed: ${error.message}`);
+        else {
+          toast.success(`Payment successful! Access granted until ${new Date(expiresAt).toLocaleString()}`);
+          setPurchasedTiers((prev) => {
+            const next = new Set(prev);
+            next.add(tier);
+            if (tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => next.add(t));
+            return next;
+          });
+        }
+      },
+      onClose: () => toast.info("Payment cancelled. You can try again anytime."),
+    });
+    setLoadingTiers((prev) => {
+      const next = new Set(prev);
+      next.delete(tier);
+      return next;
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -64,7 +116,7 @@ function Pred() {
         const s = new Set<string>();
         (data ?? []).forEach((p: any) => {
           s.add(p.tier);
-          if (p.tier === "premium") ["single", "combo", "five", "ten"].forEach((t) => s.add(t));
+          if (p.tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => s.add(t));
         });
         if (active) setPurchasedTiers(s);
       } catch {
@@ -98,7 +150,7 @@ function Pred() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {items.filter(p => tab==="all" || p.tier===tab).map(p => {
                     const locked = p.tier !== "free" && !purchasedTiers.has(p.tier);
-                    return <PredictionCard key={p.id} p={p} locked={locked} />;
+                    return <PredictionCard key={p.id} p={p} locked={locked} tierPrice={tierPriceMap[p.tier]} onUnlock={buyTier} unlockLoading={loadingTiers.has(p.tier)} />;
                   })}
                   {items.filter(p => tab==="all" || p.tier===tab).length===0 && (
                     <Card className="col-span-full p-8 text-center text-muted-foreground">No predictions in this category yet.</Card>

@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export interface Prediction {
   id: string; match_date: string; kickoff?: string | null; league?: string | null;
@@ -20,7 +21,19 @@ interface ComboMatch {
   status: "pending" | "won" | "lost" | "void";
 }
 
-export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: boolean }) {
+export function PredictionCard({
+  p,
+  locked = false,
+  tierPrice,
+  onUnlock,
+  unlockLoading = false,
+}: {
+  p: Prediction;
+  locked?: boolean;
+  tierPrice?: number;
+  onUnlock?: (tier: string) => void;
+  unlockLoading?: boolean;
+}) {
   const [bookmaker, setBookmaker] = useState<"sportybet" | "betway" | "mybet">("sportybet");
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : status === "void" ? "bg-blue-500/15 text-blue-600" : "bg-muted text-muted-foreground";
@@ -32,12 +45,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
     } catch {}
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
-  const comboHasPendingMatch = comboMatches.some((m) => (m.status || "pending") === "pending");
-  const isLocked = p.tier === "free"
-    ? false
-    : p.tier === "combo"
-      ? (locked || comboHasPendingMatch || status === "pending")
-      : (locked || status === "pending");
+  const isLocked = p.tier === "free" ? false : locked;
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
@@ -68,7 +76,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
     ? `${comboMatches.length || "Multi"}-Match Combo Ticket`
     : `${p.home_team} vs ${p.away_team}`;
   return (
-    <Card className="overflow-hidden p-5 transition hover:shadow-[var(--shadow-elegant)]">
+    <Card className="overflow-hidden border-2 p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-elegant)]">
       <div className="flex items-center justify-between">
         <Badge variant="outline" className="text-xs">{p.league || "Football"}</Badge>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusColor}`}>{status.toUpperCase()}</span>
@@ -106,6 +114,18 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
           <div className="mt-1 text-base font-bold text-primary">{displayTip}</div>
         )}
       </div>
+      {p.tier !== "free" && (
+        <div className="mt-3 rounded-lg border bg-primary/5 p-3">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Payment Tier</div>
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-sm font-semibold">Unlock this prediction</p>
+            <span className="text-base font-black text-primary">GH₵{(tierPrice ?? 0).toFixed(2)}</span>
+          </div>
+          <Button className="mt-3 w-full" onClick={() => onUnlock?.(p.tier)} disabled={!onUnlock || !isLocked || unlockLoading}>
+            {isLocked ? (unlockLoading ? "Opening checkout..." : "Unlocked") : "Already unlocked"}
+          </Button>
+        </div>
+      )}
 {!isLocked && p.odds && <div className="mt-3 text-sm">Odds: <span className="font-bold">{p.odds}</span></div>}
       <div className="mt-3 space-y-2">
         <div className="flex gap-2">
