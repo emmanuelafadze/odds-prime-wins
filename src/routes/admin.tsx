@@ -290,7 +290,8 @@ function getDisplayPrediction(prediction: string) {
 const tierMap = {
   single: 1,
   combo: 2,
-  fixed_draw: 1,
+  fixed_draw: 3,
+  premium: 3,
 } as Record<string, number>;
 
 function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchType; onUpdate: (updates: Partial<MatchType>) => void }) {
@@ -337,6 +338,7 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 }
 
 function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
+  const [isSaving, setIsSaving] = useState(false);
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'single', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
   const initialTier = initial.tier || "single";
@@ -357,67 +359,54 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
   };
 
   const save = async () => {
-    if (!["single", "combo"].includes(global.tier)) {
-      const payload: Partial<Pred> = {
-        id: initial.id,
-        match_date: global.match_date,
-        kickoff: null,
-        league: global.league || "Image Ticket",
-        home_team: global.league || "Image",
-        away_team: "Ticket",
-        prediction: "IMAGE_TICKET",
-        odds: null,
-        tier: global.tier,
-        status: global.status,
-        published: global.published,
-        is_locked: global.status === "pending",
-        sportybet_code: codes.sportybet_code || null,
-        betway_code: codes.betway_code || null,
-        mybet_code: codes.mybet_code || null,
-        prediction_image_1: null,
-        prediction_image_2: null,
-        prediction_image_3: null,
-      };
-      await onSave(payload);
-      return;
-    }
+    if (isSaving) return;
+    setIsSaving(true);
 
-    if (global.tier === "combo") {
-      const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => ["won", "void"].includes(m.status)) ? "won" : "pending";
+    try {
+      if (["combo", "fixed_draw", "premium"].includes(global.tier)) {
+        const comboStatus = matches.some(m => m.status === "lost") ? "lost" : matches.every(m => ["won", "void"].includes(m.status)) ? "won" : "pending";
+        const leagueLabel = global.tier === "fixed_draw" ? "Fixed Draw" : global.tier === "premium" ? "Premium" : "Combo";
+        const first = matches[0];
+        const predictionPayload = global.tier === "combo"
+          ? JSON.stringify({ comboId: initial.id || crypto.randomUUID(), matches })
+          : JSON.stringify({ tier: global.tier, matches });
+  
+        const payload: Partial<Pred> = {
+          id: initial.id,
+          match_date: global.match_date,
+          kickoff: null,
+          league: leagueLabel,
+          home_team: first?.home_team || leagueLabel,
+          away_team: first?.away_team || "Ticket",
+          prediction: predictionPayload,
+          odds: null,
+          tier: global.tier,
+          status: comboStatus,
+          published: global.published,
+          is_locked: comboStatus === "pending",
+          sportybet_code: codes.sportybet_code || null,
+          betway_code: codes.betway_code || null,
+          mybet_code: codes.mybet_code || null,
+          prediction_image_1: null,
+          prediction_image_2: null,
+          prediction_image_3: null,
+        };
+        await onSave(payload);
+        return;
+      }
+
+      const match = matches[0];
       const payload: Partial<Pred> = {
         id: initial.id,
         match_date: global.match_date,
-        kickoff: null,
-        league: "Combo",
-        home_team: matches[0]?.home_team || "Combo",
-        away_team: matches[0]?.away_team || "Ticket",
-        prediction: JSON.stringify({ comboId: initial.id || crypto.randomUUID(), matches }),
-        odds: null,
+        kickoff: match?.matchTime || global.kickoff || null,
+        league: match?.league || global.league,
+        home_team: match?.home_team || "",
+        away_team: match?.away_team || "",
+        prediction: match?.prediction || "",
+        odds: match?.odds || null,
         tier: global.tier,
-        status: comboStatus,
-        published: global.published,
-        is_locked: comboStatus === "pending",
-        sportybet_code: codes.sportybet_code || null,
-        betway_code: codes.betway_code || null,
-        mybet_code: codes.mybet_code || null,
-        prediction_image_1: null,
-        prediction_image_2: null,
-        prediction_image_3: null,
-      };
-      await onSave(payload);
-      return;
-    }
-    for (const match of matches) {
-      const payload = {
-        match_date: global.match_date,
-        kickoff: match.matchTime || global.kickoff || null,
-        league: match.league || global.league,
-        home_team: match.home_team,
-        away_team: match.away_team,
-        prediction: match.prediction,
-        odds: match.odds || null,
-        tier: global.tier,
-        status: match.status || global.status,
+        status: match?.status || global.status,
         published: global.published,
         is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
@@ -427,8 +416,9 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         prediction_image_2: null,
         prediction_image_3: null,
       };
-      await onSave({ id: initial.id, ...payload });
-      break;
+      await onSave(payload);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -490,7 +480,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         </div>
 
         {/* Dynamic Match Blocks */}
-        {["single", "combo"].includes(global.tier) && (
+        {["single", "combo", "fixed_draw", "premium"].includes(global.tier) && (
           <div className="space-y-4">
             {matches.map((match, index) => (
               <MatchBlock 
@@ -520,7 +510,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={save}>Save {matches.length > 1 ? `${matches.length} Matches` : 'Match'}</Button>
+          <Button onClick={save} disabled={isSaving}>{isSaving ? "Saving..." : `Save ${matches.length > 1 ? `${matches.length} Matches` : 'Match'}`}</Button>
         </div>
       </Card>
     </div>

@@ -19,12 +19,11 @@ export async function checkPredictionAccess(userId: string | null | undefined, p
 
   if (!userId) return { canAccess: false, reason: "authentication_required" as const };
 
-  const [{ data: purchases }, { data: subscriptions }] = await Promise.all([
+  const [{ data: purchases }] = await Promise.all([
     supabase.from("prediction_access").select("id").eq("user_id", userId).eq("prediction_id", predictionId).eq("is_active", true).limit(1),
-    supabase.from("user_subscriptions").select("id").eq("user_id", userId).eq("is_active", true).gt("expires_at", new Date().toISOString()).limit(1),
   ]);
 
-  if ((purchases?.length ?? 0) > 0 || (subscriptions?.length ?? 0) > 0) {
+  if ((purchases?.length ?? 0) > 0) {
     return { canAccess: true, reason: "entitled" as const };
   }
 

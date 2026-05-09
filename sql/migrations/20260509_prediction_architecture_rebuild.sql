@@ -62,16 +62,6 @@ create table if not exists prediction_status (
   notes text
 );
 
-create table if not exists user_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  tier text not null default 'premium' check (tier in ('premium')),
-  is_active boolean not null default true,
-  starts_at timestamptz not null default now(),
-  expires_at timestamptz not null,
-  created_at timestamptz not null default now()
-);
-
 create table if not exists purchase_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -83,6 +73,12 @@ create table if not exists purchase_history (
   status text not null check (status in ('successful','failed','refunded')),
   created_at timestamptz not null default now()
 );
+
+create unique index if not exists prediction_access_user_prediction_source_idx
+  on prediction_access(user_id, prediction_id, source);
+
+alter table if exists purchases
+  add column if not exists prediction_id uuid references predictions(id) on delete set null;
 
 create table if not exists admin_logs (
   id uuid primary key default gen_random_uuid(),
