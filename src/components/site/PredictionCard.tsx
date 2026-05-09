@@ -37,7 +37,7 @@ export function PredictionCard({ p, locked = false }: { p: Prediction; locked?: 
     ? false
     : p.tier === "combo"
       ? (locked || comboHasPendingMatch || status === "pending")
-      : (locked || status === "pending" || Boolean(p.is_locked));
+      : (locked || status === "pending");
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
