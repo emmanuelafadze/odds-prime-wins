@@ -12,6 +12,7 @@ import { PRICING } from "@/lib/pricing";
 import { payWithPaystack } from "@/lib/paystack";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { checkPredictionAccess } from "@/lib/prediction-access";
 
 export const Route = createFileRoute("/predictions")({
   head: () => ({ meta: [{ title: "Premium Predictions — ODDSPrime" }, { name: "description", content: "Premium correct scores and accumulators in German cedis." }] }),
@@ -19,9 +20,8 @@ export const Route = createFileRoute("/predictions")({
 });
 
 const TIERS = [
-  { key: "free", label: "Free" },
-  { key: "single", label: "Correct Score" },
-  { key: "combo", label: "2-Score Combo" },
+  { key: "single", label: "Single Correct Score" },
+  { key: "combo", label: "Combo Correct Score" },
   { key: "fixed_draw", label: "Fixed Draw" },
   { key: "premium", label: "Premium" },
 ];
@@ -30,7 +30,7 @@ function Pred() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [items, setItems] = useState<Prediction[] | null>(null);
-  const [purchasedTiers, setPurchasedTiers] = useState<Set<string>>(new Set());
+  const [unlockedPredictions, setUnlockedPredictions] = useState<Set<string>>(new Set());
   const [loadingTiers, setLoadingTiers] = useState<Set<string>>(new Set());
 
   const tierPriceMap: Record<string, number> = {
@@ -63,12 +63,7 @@ function Pred() {
         if (error) toast.error(`Purchase failed: ${error.message}`);
         else {
           toast.success(`Payment successful! Access granted until ${new Date(expiresAt).toLocaleString()}`);
-          setPurchasedTiers((prev) => {
-            const next = new Set(prev);
-            next.add(tier);
-            if (tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => next.add(t));
-            return next;
-          });
+          void loadPurchasesAndAccess();
         }
       },
       onClose: () => toast.info("Payment cancelled. You can try again anytime."),
@@ -98,34 +93,24 @@ function Pred() {
       }
     };
 
-    const loadPurchases = async () => {
+    const loadPurchasesAndAccess = async () => {
       if (!user) {
-        if (active) setPurchasedTiers(new Set());
+        if (active) setUnlockedPredictions(new Set());
         return;
       }
 
       try {
-        const { data, error } = await supabase
-          .from("purchases")
-          .select("tier,expires_at")
-          .eq("user_id", user.id)
-          .gt("expires_at", new Date().toISOString());
-
-        if (error) throw error;
-
-        const s = new Set<string>();
-        (data ?? []).forEach((p: any) => {
-          s.add(p.tier);
-          if (p.tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => s.add(t));
-        });
-        if (active) setPurchasedTiers(s);
+        const rows = (await supabase.from("predictions").select("id")).data ?? [];
+        const accessResults = await Promise.all(rows.map(async (row: any) => ({ id: row.id, access: await checkPredictionAccess(user.id, row.id) })));
+        const s = new Set<string>(accessResults.filter((r) => r.access.canAccess).map((r) => r.id));
+        if (active) setUnlockedPredictions(s);
       } catch {
-        if (active) setPurchasedTiers(new Set());
+        if (active) setUnlockedPredictions(new Set());
       }
     };
 
     loadPredictions();
-    loadPurchases();
+    loadPurchasesAndAccess();
 
     return () => {
       active = false;
@@ -149,7 +134,7 @@ function Pred() {
               {items === null ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({length:6}).map((_,i)=>(<Skeleton key={i} className="h-48"/>))}</div> :
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {items.filter(p => tab==="all" || p.tier===tab).map(p => {
-                    const locked = p.tier !== "free" && !purchasedTiers.has(p.tier);
+                    const locked = !unlockedPredictions.has(p.id);
                     return <PredictionCard key={p.id} p={p} locked={locked} tierPrice={tierPriceMap[p.tier]} onUnlock={buyTier} unlockLoading={loadingTiers.has(p.tier)} />;
                   })}
                   {items.filter(p => tab==="all" || p.tier===tab).length===0 && (
