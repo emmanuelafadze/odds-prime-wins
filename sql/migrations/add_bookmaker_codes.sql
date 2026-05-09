@@ -1,3 +1,0 @@
-ALTER TABLE predictions ADD COLUMN IF NOT EXISTS sportybet_code TEXT;
-ALTER TABLE predictions ADD COLUMN IF NOT EXISTS betway_code TEXT;
-ALTER TABLE predictions ADD COLUMN IF NOT EXISTS mybet_code TEXT;
