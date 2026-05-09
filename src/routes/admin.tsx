@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-const TIERS = ["free","single","combo","five","ten","premium"] as const;
+const TIERS = ["free","single","combo","fixed_draw","premium"] as const;
 const COLORS = ["#f5b800","#3b82f6","#10b981","#ef4444","#8b5cf6","#f97316"];
 
 interface Pred { id:string; match_date:string; kickoff?:string|null; league?:string|null; home_team:string; away_team:string; prediction:string; odds?:number|null; tier:string; status:string; published:boolean; is_locked?: boolean | null; prediction_image_1?: string | null; prediction_image_2?: string | null; prediction_image_3?: string | null; sportybet_code?: string | null; betway_code?: string | null; mybet_code?: string | null; }
@@ -290,9 +290,7 @@ function getDisplayPrediction(prediction: string) {
 const tierMap = {
   single: 1,
   combo: 2,
-  five: 5,
-  seven: 7,
-  ten: 10,
+  fixed_draw: 1,
 } as Record<string, number>;
 
 function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchType; onUpdate: (updates: Partial<MatchType>) => void }) {
@@ -341,8 +339,6 @@ function MatchBlock({ index, match, onUpdate }: { index: number; match: MatchTyp
 function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onClose: () => void; onSave: (data: Partial<Pred>) => Promise<void> }) {
   const [global, setGlobal] = useState({ match_date: initial.match_date || new Date().toISOString().slice(0,10), kickoff: initial.kickoff || '', league: initial.league || '', tier: initial.tier || 'free', status: initial.status || 'pending', published: initial.published ?? true, is_locked: (initial.status || "pending") === "pending" });
   const [codes, setCodes] = useState({ sportybet_code: initial.sportybet_code || "", betway_code: initial.betway_code || "", mybet_code: initial.mybet_code || "" });
-  const [images, setImages] = useState({ prediction_image_1: initial.prediction_image_1 || "", prediction_image_2: initial.prediction_image_2 || "", prediction_image_3: initial.prediction_image_3 || "" });
-  const [imageFiles, setImageFiles] = useState<{ prediction_image_1?: File; prediction_image_2?: File; prediction_image_3?: File }>({});
   const initialTier = initial.tier || "single";
   const initialCount = initialTier === "single" ? 1 : initialTier === "combo" ? 2 : (tierMap[initialTier as keyof typeof tierMap] || 1);
   const [matches, setMatches] = useState<MatchType[]>(() => {
@@ -360,28 +356,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
     setMatches(Array.from({ length: count }, () => ({ matchId: crypto.randomUUID(), home_team: '', away_team: '', league: '', matchTime: '', prediction: '', status: "pending" })));
   };
 
-  const uploadImageIfNeeded = async (field: "prediction_image_1" | "prediction_image_2" | "prediction_image_3") => {
-    const file = imageFiles[field];
-    if (!file) return images[field];
-    const ext = file.name.split(".").pop() || "jpg";
-    const filePath = `predictions/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("prediction-images").upload(filePath, file, { upsert: false });
-    if (error) throw new Error(error.message);
-    return filePath;
-  };
-
   const save = async () => {
-    let uploadedImages = { ...images };
-    try {
-      uploadedImages = {
-        prediction_image_1: await uploadImageIfNeeded("prediction_image_1") || "",
-        prediction_image_2: await uploadImageIfNeeded("prediction_image_2") || "",
-        prediction_image_3: await uploadImageIfNeeded("prediction_image_3") || "",
-      };
-    } catch (e: any) {
-      return toast.error(`Image upload failed: ${e.message}`);
-    }
-
     if (!["single", "combo"].includes(global.tier)) {
       const payload: Partial<Pred> = {
         id: initial.id,
@@ -395,13 +370,13 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: global.status,
         published: global.published,
-        is_locked: (match.status || global.status) === "pending",
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
-        prediction_image_1: uploadedImages.prediction_image_1 || null,
-        prediction_image_2: uploadedImages.prediction_image_2 || null,
-        prediction_image_3: uploadedImages.prediction_image_3 || null,
+        prediction_image_1: null,
+        prediction_image_2: null,
+        prediction_image_3: null,
       };
       await onSave(payload);
       return;
@@ -425,9 +400,9 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
-        prediction_image_1: uploadedImages.prediction_image_1 || null,
-        prediction_image_2: uploadedImages.prediction_image_2 || null,
-        prediction_image_3: uploadedImages.prediction_image_3 || null,
+        prediction_image_1: null,
+        prediction_image_2: null,
+        prediction_image_3: null,
       };
       await onSave(payload);
       return;
@@ -444,13 +419,13 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
         tier: global.tier,
         status: match.status || global.status,
         published: global.published,
-        is_locked: (match.status || global.status) === "pending",
+        is_locked: global.status === "pending",
         sportybet_code: codes.sportybet_code || null,
         betway_code: codes.betway_code || null,
         mybet_code: codes.mybet_code || null,
-        prediction_image_1: uploadedImages.prediction_image_1 || null,
-        prediction_image_2: uploadedImages.prediction_image_2 || null,
-        prediction_image_3: uploadedImages.prediction_image_3 || null,
+        prediction_image_1: null,
+        prediction_image_2: null,
+        prediction_image_3: null,
       };
       await onSave({ id: initial.id, ...payload });
       break;
@@ -486,7 +461,7 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['single', 'combo', 'five', 'seven', 'ten', 'premium'] as const).map(t => (
+                  {(['single', 'combo', 'fixed_draw', 'premium'] as const).map(t => (
                     <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>
                   ))}
                 </SelectContent>
@@ -525,22 +500,6 @@ function EditDialog({ initial, onClose, onSave }: { initial: Partial<Pred>; onCl
                 onUpdate={updates => updateMatch(index, updates)}
               />
             ))}
-          </div>
-        )}
-        {!(["single", "combo"] as const).includes(global.tier as "single"|"combo") && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div>
-              <Label>Upload Prediction Image 1</Label>
-              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_1: e.target.files?.[0] }))} />
-            </div>
-            <div>
-              <Label>Upload Prediction Image 2</Label>
-              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_2: e.target.files?.[0] }))} />
-            </div>
-            <div>
-              <Label>Upload Prediction Image 3</Label>
-              <Input type="file" accept="image/*" onChange={e => setImageFiles(i => ({ ...i, prediction_image_3: e.target.files?.[0] }))} />
-            </div>
           </div>
         )}
 

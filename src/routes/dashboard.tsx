@@ -38,7 +38,7 @@ function Dash() {
 
   const active = (purchases ?? []).filter(p => new Date(p.expires_at) > new Date());
   const tiers = new Set(active.map(p => p.tier));
-  if (tiers.has("premium")) ["single","combo","five","ten"].forEach(t=>tiers.add(t));
+  if (tiers.has("premium")) ["single","combo","fixed_draw"].forEach(t=>tiers.add(t));
 
   return (
     <SiteLayout>

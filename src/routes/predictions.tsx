@@ -22,8 +22,7 @@ const TIERS = [
   { key: "free", label: "Free" },
   { key: "single", label: "Correct Score" },
   { key: "combo", label: "2-Score Combo" },
-  { key: "five", label: "5 Odds" },
-  { key: "ten", label: "10 Odds" },
+  { key: "fixed_draw", label: "Fixed Draw" },
   { key: "premium", label: "Premium" },
 ];
 
@@ -37,8 +36,7 @@ function Pred() {
   const tierPriceMap: Record<string, number> = {
     single: PRICING.single.price,
     combo: PRICING.combo.price,
-    five: PRICING.five.price,
-    ten: PRICING.ten.price,
+    fixed_draw: PRICING.fixed_draw.price,
     premium: PRICING.premium.price,
   };
 
@@ -68,7 +66,7 @@ function Pred() {
           setPurchasedTiers((prev) => {
             const next = new Set(prev);
             next.add(tier);
-            if (tier === "premium") ["single", "combo", "five", "ten"].forEach((t) => next.add(t));
+            if (tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => next.add(t));
             return next;
           });
         }
@@ -118,7 +116,7 @@ function Pred() {
         const s = new Set<string>();
         (data ?? []).forEach((p: any) => {
           s.add(p.tier);
-          if (p.tier === "premium") ["single", "combo", "five", "ten"].forEach((t) => s.add(t));
+          if (p.tier === "premium") ["single", "combo", "fixed_draw"].forEach((t) => s.add(t));
         });
         if (active) setPurchasedTiers(s);
       } catch {

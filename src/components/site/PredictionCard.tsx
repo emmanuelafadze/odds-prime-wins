@@ -45,12 +45,7 @@ export function PredictionCard({
     } catch {}
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
-  const comboHasPendingMatch = comboMatches.some((m) => (m.status || "pending") === "pending");
-  const isLocked = p.tier === "free"
-    ? false
-    : p.tier === "combo"
-      ? (locked || comboHasPendingMatch || status === "pending")
-      : (locked || status === "pending");
+  const isLocked = p.tier === "free" ? false : locked;
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
