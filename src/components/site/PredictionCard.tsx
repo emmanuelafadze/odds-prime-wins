@@ -22,6 +22,8 @@ interface ComboMatch {
   status: "pending" | "won" | "lost" | "void";
 }
 
+const isMultiMatchTier = (tier: string) => tier === "combo" || tier === "fixed_draw";
+
 export function PredictionCard({
   p,
   locked = false,
@@ -39,7 +41,7 @@ export function PredictionCard({
   const status = (p.status || "pending").toLowerCase();
   const statusColor = status === "won" ? "bg-green-500/15 text-green-600" : status === "lost" ? "bg-destructive/15 text-destructive" : status === "void" ? "bg-blue-500/15 text-blue-600" : "bg-muted text-muted-foreground";
   let comboMatches: ComboMatch[] = [];
-  if (p.tier === "combo") {
+  if (isMultiMatchTier(p.tier)) {
     try {
       const parsed = JSON.parse(p.prediction || "{}");
       comboMatches = Array.isArray(parsed.matches) ? parsed.matches : [];
@@ -50,6 +52,9 @@ export function PredictionCard({
   const pricingEntry = Object.values(PRICING).find((entry) => entry.tier === p.tier);
   const resolvedTierPrice = tierPrice ?? pricingEntry?.price;
   const showPaymentSection = Boolean(pricingEntry) && p.tier !== "free";
+  const unlockButtonLabel = isLocked
+    ? (unlockLoading ? "Opening checkout..." : "Pay Now")
+    : "Already unlocked";
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
@@ -64,7 +69,7 @@ export function PredictionCard({
       return null;
     };
 
-    if (p.tier !== "combo") {
+    if (!isMultiMatchTier(p.tier)) {
       const parsedTip = parseTipFromJson(rawPrediction);
       if (parsedTip) return parsedTip;
       return rawPrediction;
@@ -72,12 +77,14 @@ export function PredictionCard({
 
     const parsedTip = parseTipFromJson(rawPrediction);
     if (parsedTip) return parsedTip;
-    if (comboMatches.length > 0) return `${comboMatches.length}-Match Combo`;
+    if (comboMatches.length > 0) {
+      return p.tier === "fixed_draw" ? `${comboMatches.length}-Match Fixed Draw` : `${comboMatches.length}-Match Combo`;
+    }
 
-    return "Combo matches listed below";
+    return p.tier === "fixed_draw" ? "Fixed draw matches listed below" : "Combo matches listed below";
   })();
-  const cardTitle = p.tier === "combo"
-    ? `${comboMatches.length || "Multi"}-Match Combo Ticket`
+  const cardTitle = isMultiMatchTier(p.tier)
+    ? `${comboMatches.length || (p.tier === "fixed_draw" ? 3 : "Multi")}-Match ${p.tier === "fixed_draw" ? "Fixed Draw" : "Combo"} Ticket`
     : `${p.home_team} vs ${p.away_team}`;
   return (
     <Card className="overflow-hidden border-2 p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-elegant)]">
@@ -90,7 +97,7 @@ export function PredictionCard({
         {p.kickoff && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {p.kickoff.slice(0,5)}</span>}
       </div>
       <h3 className="mt-3 text-lg font-bold">{cardTitle}</h3>
-      {p.tier === "combo" && comboMatches.length > 0 && (
+      {isMultiMatchTier(p.tier) && comboMatches.length > 0 && (
         <div className="mt-3 space-y-2">
           {comboMatches.map((m) => {
             const mStatusColor = m.status === "won" ? "bg-green-500/15 text-green-600" : m.status === "lost" ? "bg-destructive/15 text-destructive" : m.status === "void" ? "bg-blue-500/15 text-blue-600" : "bg-muted text-muted-foreground";
@@ -126,7 +133,7 @@ export function PredictionCard({
             <span className="text-base font-black text-primary">GH₵{(resolvedTierPrice ?? 0).toFixed(2)}</span>
           </div>
           <Button className="mt-3 w-full" onClick={() => onUnlock?.()} disabled={!onUnlock || !isLocked || unlockLoading}>
-            {isLocked ? (unlockLoading ? "Opening checkout..." : "Pay Now") : "Already unlocked"}
+            {unlockButtonLabel || "Pay Now"}
           </Button>
         </div>
       )}
