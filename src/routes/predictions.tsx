@@ -26,6 +26,11 @@ const TIERS = [
   { key: "premium", label: "Premium" },
 ];
 
+const PRICING_BY_TIER = Object.values(PRICING).reduce<Record<string, (typeof PRICING)[keyof typeof PRICING]>>((acc, entry) => {
+  acc[entry.tier] = entry;
+  return acc;
+}, {});
+
 function Pred() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -33,17 +38,15 @@ function Pred() {
   const [unlockedPredictions, setUnlockedPredictions] = useState<Set<string>>(new Set());
   const [loadingPredictions, setLoadingPredictions] = useState<Set<string>>(new Set());
 
-  const tierPriceMap: Record<string, number> = {
-    single: PRICING.single.price,
-    combo: PRICING.combo.price,
-    fixed_draw: PRICING.fixed_draw.price,
-    premium: PRICING.premium.price,
-  };
+  const tierPriceMap: Record<string, number> = Object.values(PRICING).reduce((acc, entry) => {
+    acc[entry.tier] = entry.price;
+    return acc;
+  }, {} as Record<string, number>);
 
   const buyPrediction = async (prediction: Prediction) => {
     if (!user) { nav({ to: "/login" }); return; }
     if (loadingPredictions.has(prediction.id)) return;
-    const pricingEntry = Object.values(PRICING).find((entry) => entry.tier === prediction.tier);
+    const pricingEntry = PRICING_BY_TIER[prediction.tier];
     if (!pricingEntry) return;
     setLoadingPredictions((prev) => new Set(prev).add(prediction.id));
     toast.message(`Opening Paystack checkout for GH₵${pricingEntry.price.toFixed(2)}`);
@@ -82,6 +85,7 @@ function Pred() {
         const { data, error } = await supabase
           .from("predictions")
           .select("*")
+          .eq("published", true)
           .order("match_date", { ascending: false })
           .limit(100);
 
@@ -133,8 +137,9 @@ function Pred() {
               {items === null ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({length:6}).map((_,i)=>(<Skeleton key={i} className="h-48"/>))}</div> :
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {items.filter(p => tab==="all" || p.tier===tab).map(p => {
-                    const locked = !unlockedPredictions.has(p.id);
-                    return <PredictionCard key={p.id} p={p} locked={locked} tierPrice={tierPriceMap[p.tier]} onUnlock={() => buyPrediction(p)} unlockLoading={loadingPredictions.has(p.id)} />;
+                    const isPaidTier = p.tier !== "free" && Boolean(PRICING_BY_TIER[p.tier]);
+                    const locked = isPaidTier ? !unlockedPredictions.has(p.id) : false;
+                    return <PredictionCard key={p.id} p={p} locked={locked} tierPrice={tierPriceMap[p.tier]} onUnlock={isPaidTier ? () => buyPrediction(p) : undefined} unlockLoading={loadingPredictions.has(p.id)} />;
                   })}
                   {items.filter(p => tab==="all" || p.tier===tab).length===0 && (
                     <Card className="col-span-full p-8 text-center text-muted-foreground">No predictions in this category yet.</Card>
