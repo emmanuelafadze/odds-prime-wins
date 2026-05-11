@@ -52,6 +52,9 @@ export function PredictionCard({
   const pricingEntry = Object.values(PRICING).find((entry) => entry.tier === p.tier);
   const resolvedTierPrice = tierPrice ?? pricingEntry?.price;
   const showPaymentSection = Boolean(pricingEntry) && p.tier !== "free";
+  const unlockButtonLabel = isLocked
+    ? (unlockLoading ? "Opening checkout..." : "Pay Now")
+    : "Already unlocked";
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
@@ -130,7 +133,7 @@ export function PredictionCard({
             <span className="text-base font-black text-primary">GH₵{(resolvedTierPrice ?? 0).toFixed(2)}</span>
           </div>
           <Button className="mt-3 w-full" onClick={() => onUnlock?.()} disabled={!onUnlock || !isLocked || unlockLoading}>
-            {isLocked ? (unlockLoading ? "Opening checkout..." : "Pay Now") : "Already unlocked"}
+            {unlockButtonLabel || "Pay Now"}
           </Button>
         </div>
       )}
