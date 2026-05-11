@@ -43,38 +43,60 @@ function Pred() {
     return acc;
   }, {} as Record<string, number>);
 
+  const loadPurchasesAndAccess = async () => {
+    if (!user) {
+      setUnlockedPredictions(new Set());
+      return;
+    }
+
+    try {
+      const rows = (await supabase.from("predictions").select("id")).data ?? [];
+      const accessResults = await Promise.all(rows.map(async (row: any) => ({ id: row.id, access: await checkPredictionAccess(user.id, row.id) })));
+      const s = new Set<string>(accessResults.filter((r) => r.access.canAccess).map((r) => r.id));
+      setUnlockedPredictions(s);
+    } catch {
+      setUnlockedPredictions(new Set());
+    }
+  };
+
   const buyPrediction = async (prediction: Prediction) => {
     if (!user) { nav({ to: "/login" }); return; }
     if (loadingPredictions.has(prediction.id)) return;
     const pricingEntry = PRICING_BY_TIER[prediction.tier];
     if (!pricingEntry) return;
     setLoadingPredictions((prev) => new Set(prev).add(prediction.id));
-    toast.message(`Opening Paystack checkout for GH₵${pricingEntry.price.toFixed(2)}`);
-    await payWithPaystack({
-      email: user.email!,
-      amountGhs: pricingEntry.price,
-      metadata: { tier: pricingEntry.tier, name: pricingEntry.name, predictionId: prediction.id },
-      onSuccess: async (ref) => {
-        const { error: historyError } = await supabase.from("purchase_history").insert({
-          user_id: user.id, prediction_id: prediction.id, tier: pricingEntry.tier, amount_ghs: pricingEntry.price,
-          reference: ref, status: "successful",
-        });
-        const { error: accessError } = await supabase.from("prediction_access").upsert({
-          user_id: user.id, prediction_id: prediction.id, source: "purchase", is_active: true,
-        }, { onConflict: "user_id,prediction_id,source" });
-        if (historyError || accessError) toast.error(`Purchase failed: ${historyError?.message || accessError?.message}`);
-        else {
-          toast.success("Payment successful! Prediction unlocked.");
-          void loadPurchasesAndAccess();
-        }
-      },
-      onClose: () => toast.info("Payment cancelled. You can try again anytime."),
-    });
-    setLoadingPredictions((prev) => {
-      const next = new Set(prev);
-      next.delete(prediction.id);
-      return next;
-    });
+    try {
+      toast.message(`Opening Paystack checkout for GH₵${pricingEntry.price.toFixed(2)}`);
+      await payWithPaystack({
+        email: user.email!,
+        amountGhs: pricingEntry.price,
+        metadata: { tier: pricingEntry.tier, name: pricingEntry.name, predictionId: prediction.id },
+        onSuccess: async (ref) => {
+          const { error: historyError } = await supabase.from("purchase_history").insert({
+            user_id: user.id, prediction_id: prediction.id, tier: pricingEntry.tier, amount_ghs: pricingEntry.price,
+            reference: ref, status: "successful",
+          });
+          const { error: accessError } = await supabase.from("prediction_access").upsert({
+            user_id: user.id, prediction_id: prediction.id, source: "purchase", is_active: true,
+          }, { onConflict: "user_id,prediction_id,source" });
+          if (historyError || accessError) toast.error(`Purchase failed: ${historyError?.message || accessError?.message}`);
+          else {
+            toast.success("Payment successful! Prediction unlocked.");
+            void loadPurchasesAndAccess();
+          }
+        },
+        onClose: () => toast.info("Payment cancelled. You can try again anytime."),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to open Paystack checkout.";
+      toast.error(message);
+    } finally {
+      setLoadingPredictions((prev) => {
+        const next = new Set(prev);
+        next.delete(prediction.id);
+        return next;
+      });
+    }
   };
 
   useEffect(() => {
@@ -96,24 +118,8 @@ function Pred() {
       }
     };
 
-    const loadPurchasesAndAccess = async () => {
-      if (!user) {
-        if (active) setUnlockedPredictions(new Set());
-        return;
-      }
-
-      try {
-        const rows = (await supabase.from("predictions").select("id")).data ?? [];
-        const accessResults = await Promise.all(rows.map(async (row: any) => ({ id: row.id, access: await checkPredictionAccess(user.id, row.id) })));
-        const s = new Set<string>(accessResults.filter((r) => r.access.canAccess).map((r) => r.id));
-        if (active) setUnlockedPredictions(s);
-      } catch {
-        if (active) setUnlockedPredictions(new Set());
-      }
-    };
-
     loadPredictions();
-    loadPurchasesAndAccess();
+    void loadPurchasesAndAccess();
 
     return () => {
       active = false;
