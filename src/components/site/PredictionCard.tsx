@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Lock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PRICING } from "@/lib/pricing";
 
 export interface Prediction {
   id: string; match_date: string; kickoff?: string | null; league?: string | null;
@@ -46,6 +47,9 @@ export function PredictionCard({
   }
   const bookmakerCode = bookmaker === "sportybet" ? p.sportybet_code : bookmaker === "betway" ? p.betway_code : p.mybet_code;
   const isLocked = locked;
+  const pricingEntry = Object.values(PRICING).find((entry) => entry.tier === p.tier);
+  const resolvedTierPrice = tierPrice ?? pricingEntry?.price;
+  const showPaymentSection = Boolean(pricingEntry) && p.tier !== "free";
 
   const displayTip = (() => {
     const rawPrediction = (p.prediction || "").trim();
@@ -114,12 +118,12 @@ export function PredictionCard({
           <div className="mt-1 text-base font-bold text-primary">{displayTip}</div>
         )}
       </div>
-      {p.tier !== "free" && (
+      {showPaymentSection && (
         <div className="mt-3 rounded-lg border bg-primary/5 p-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Payment Tier</div>
           <div className="mt-1 flex items-center justify-between">
             <p className="text-sm font-semibold">Unlock this prediction</p>
-            <span className="text-base font-black text-primary">GH₵{(tierPrice ?? 0).toFixed(2)}</span>
+            <span className="text-base font-black text-primary">GH₵{(resolvedTierPrice ?? 0).toFixed(2)}</span>
           </div>
           <Button className="mt-3 w-full" onClick={() => onUnlock?.()} disabled={!onUnlock || !isLocked || unlockLoading}>
             {isLocked ? (unlockLoading ? "Opening checkout..." : "Pay Now") : "Already unlocked"}
